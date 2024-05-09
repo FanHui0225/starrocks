@@ -34,18 +34,21 @@
 
 package com.starrocks.qe;
 
+import com.starrocks.authentication.AuthenticationMgr;
 import com.starrocks.authentication.PlainPasswordAuthenticationProvider;
 import com.starrocks.authentication.UserAuthenticationInfo;
 import com.starrocks.common.DdlException;
 import com.starrocks.server.GlobalStateMgr;
-import com.starrocks.sql.ast.SetListItem;
-import com.starrocks.sql.ast.SetPassVar;
-import com.starrocks.sql.ast.SetStmt;
-import com.starrocks.sql.ast.SystemVariable;
-import com.starrocks.sql.ast.UserVariable;
+import com.starrocks.sql.ast.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.Map;
 
 // Set executor
 public class SetExecutor {
+    private static final Logger LOG = LogManager.getLogger(SetExecutor.class);
+
     private final ConnectContext ctx;
     private final SetStmt stmt;
 
@@ -80,6 +83,22 @@ public class SetExecutor {
             userAuthenticationInfo.setPassword(setPassVar.getPassword());
             GlobalStateMgr.getCurrentState().getAuthenticationMgr()
                     .alterUser(setPassVar.getUserIdent(), userAuthenticationInfo);
+        } else if (var instanceof SetResourceIsolationVar) {
+            SetResourceIsolationVar setResourceIsolationVar = (SetResourceIsolationVar) var;
+            Map<UserIdentity, UserAuthenticationInfo> userToAuthenticationInfo =
+                    GlobalStateMgr.getCurrentState().getAuthenticationMgr().getUserToAuthenticationInfo();
+            UserIdentity userAuthenticationInfo = userToAuthenticationInfo.keySet().stream()
+                    .filter(entry -> entry.getUser().equals(setResourceIsolationVar.getUserIdent().getUser()))
+                    .findFirst()
+                    .orElse(null);
+            if (null == userAuthenticationInfo) {
+                throw new DdlException("authentication info for user " + setResourceIsolationVar.getUserIdent() + " not found");
+            }
+            UserIdentity currentUser = ConnectContext.get().getCurrentUserIdentity();
+            if (!currentUser.getUser().equals(AuthenticationMgr.ROOT_USER)) {
+                throw new DdlException("only allow set resource isolation for other user, current user: " + currentUser.getUser());
+            }
+            LOG.info("=================>> Set Resource Isolation Var Successful! <<=================");
         }
     }
 
