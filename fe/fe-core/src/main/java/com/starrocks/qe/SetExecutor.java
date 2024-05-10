@@ -106,7 +106,10 @@ public class SetExecutor {
                 throw new DdlException("only allow set resource isolation for other user," +
                         " current user: " + currentUser.getUser());
             }
-            LOG.info("=================>> Set Resource Isolation Var Successful! <<=================");
+            LOG.info("=================>> Set Resource Isolation Var Successful!, " +
+                            "user: {}, hosts: {}  <<=================",
+                    setResourceIsolationVar.getUserIdent().getUser(),
+                    setResourceIsolationVar.getHosts());
         }
     }
 
