@@ -39,11 +39,18 @@ import com.starrocks.authentication.PlainPasswordAuthenticationProvider;
 import com.starrocks.authentication.UserAuthenticationInfo;
 import com.starrocks.common.DdlException;
 import com.starrocks.server.GlobalStateMgr;
-import com.starrocks.sql.ast.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.starrocks.sql.ast.SetListItem;
+import com.starrocks.sql.ast.SetPassVar;
+import com.starrocks.sql.ast.SetResourceIsolationVar;
+import com.starrocks.sql.ast.SetStmt;
+import com.starrocks.sql.ast.SystemVariable;
+import com.starrocks.sql.ast.UserIdentity;
+import com.starrocks.sql.ast.UserVariable;
 
 import java.util.Map;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 // Set executor
 public class SetExecutor {
@@ -92,11 +99,13 @@ public class SetExecutor {
                     .findFirst()
                     .orElse(null);
             if (null == userAuthenticationInfo) {
-                throw new DdlException("authentication info for user " + setResourceIsolationVar.getUserIdent() + " not found");
+                throw new DdlException("authentication info for user " +
+                        setResourceIsolationVar.getUserIdent() + " not found");
             }
             UserIdentity currentUser = ConnectContext.get().getCurrentUserIdentity();
             if (!currentUser.getUser().equals(AuthenticationMgr.ROOT_USER)) {
-                throw new DdlException("only allow set resource isolation for other user, current user: " + currentUser.getUser());
+                throw new DdlException("only allow set resource isolation for other user," +
+                        " current user: " + currentUser.getUser());
             }
             LOG.info("=================>> Set Resource Isolation Var Successful! <<=================");
         }

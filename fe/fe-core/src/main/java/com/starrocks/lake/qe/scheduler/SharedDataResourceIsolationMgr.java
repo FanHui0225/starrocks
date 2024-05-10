@@ -1,16 +1,14 @@
 package com.starrocks.lake.qe.scheduler;
 
-import com.starrocks.server.GlobalStateMgr;
-
 /**
  * Created by liujing on 2024/5/9.
  */
 public class SharedDataResourceIsolationMgr implements ResourceIsolationMgr {
 
-    private static final SharedDataResourceIsolationMgr sharedDataResourceIsolationMgr = new SharedDataResourceIsolationMgr();
+    private static final SharedDataResourceIsolationMgr SHARED_DATA_RESOURCE_ISOLATION_MGR = new SharedDataResourceIsolationMgr();
 
     public static SharedDataResourceIsolationMgr getManager() {
-        return sharedDataResourceIsolationMgr;
+        return SHARED_DATA_RESOURCE_ISOLATION_MGR;
     }
 
     private SharedDataResourceIsolationMgr() {
