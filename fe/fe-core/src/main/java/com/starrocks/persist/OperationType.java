@@ -902,6 +902,9 @@ public class OperationType {
 
     public static final short OP_DISABLE_TABLE_RECOVERY = 13510;
 
+    @IgnorableOnReplayFailed
+    public static final short OP_SET_CN_RESOURCE_ISOLATION = 13688;
+
     /**
      * NOTICE: OperationType cannot use a value exceeding 20000, and an error will be reported if it exceeds
      */

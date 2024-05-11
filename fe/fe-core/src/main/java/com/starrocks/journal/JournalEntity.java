@@ -54,6 +54,7 @@ import com.starrocks.common.io.Writable;
 import com.starrocks.common.util.SmallFileMgr.SmallFile;
 import com.starrocks.ha.LeaderInfo;
 import com.starrocks.journal.bdbje.Timestamp;
+import com.starrocks.lake.resource.UserComputeNodeResourceInfo;
 import com.starrocks.leader.Checkpoint;
 import com.starrocks.load.DeleteInfo;
 import com.starrocks.load.ExportJob;
@@ -1113,6 +1114,10 @@ public class JournalEntity implements Writable {
                 break;
             case OperationType.OP_RECOVER_PARTITION_VERSION:
                 data = GsonUtils.GSON.fromJson(Text.readString(in), PartitionVersionRecoveryInfo.class);
+                isRead = true;
+                break;
+            case OperationType.OP_SET_CN_RESOURCE_ISOLATION:
+                data = UserComputeNodeResourceInfo.read(in);
                 isRead = true;
                 break;
             default: {

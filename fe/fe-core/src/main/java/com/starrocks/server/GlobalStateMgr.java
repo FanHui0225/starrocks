@@ -159,6 +159,7 @@ import com.starrocks.lake.ShardManager;
 import com.starrocks.lake.StarMgrMetaSyncer;
 import com.starrocks.lake.StarOSAgent;
 import com.starrocks.lake.compaction.CompactionMgr;
+import com.starrocks.lake.resource.ComputeNodeResourceIsolationMgr;
 import com.starrocks.lake.vacuum.AutovacuumDaemon;
 import com.starrocks.leader.Checkpoint;
 import com.starrocks.leader.TaskRunStateSynchronizer;
@@ -468,6 +469,9 @@ public class GlobalStateMgr {
 
     private AuthenticationMgr authenticationMgr;
     private AuthorizationMgr authorizationMgr;
+
+    // cn resource isolation mgr
+    private ComputeNodeResourceIsolationMgr computeNodeResourceIsolationMgr;
 
     private DomainResolver domainResolver;
 
@@ -806,6 +810,8 @@ public class GlobalStateMgr {
             this.storageVolumeMgr = new SharedNothingStorageVolumeMgr();
         }
 
+        this.computeNodeResourceIsolationMgr = new ComputeNodeResourceIsolationMgr(RunMode.isSharedDataMode());
+
         GlobalStateMgr gsm = this;
         this.execution = new StateChangeExecution() {
             @Override
@@ -1057,6 +1063,10 @@ public class GlobalStateMgr {
 
     public StorageVolumeMgr getStorageVolumeMgr() {
         return storageVolumeMgr;
+    }
+
+    public ComputeNodeResourceIsolationMgr getComputeNodeResourceIsolationMgr() {
+        return computeNodeResourceIsolationMgr;
     }
 
     public PipeManager getPipeManager() {

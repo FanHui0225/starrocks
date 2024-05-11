@@ -65,6 +65,7 @@ import com.starrocks.journal.JournalEntity;
 import com.starrocks.journal.JournalInconsistentException;
 import com.starrocks.journal.JournalTask;
 import com.starrocks.journal.bdbje.Timestamp;
+import com.starrocks.lake.resource.UserComputeNodeResourceInfo;
 import com.starrocks.load.DeleteInfo;
 import com.starrocks.load.DeleteMgr;
 import com.starrocks.load.ExportFailMsg;
@@ -119,6 +120,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -1167,6 +1169,12 @@ public class EditLog {
                     PartitionVersionRecoveryInfo info = (PartitionVersionRecoveryInfo) journal.getData();
                     GlobalStateMgr.getCurrentState().getMetaRecoveryDaemon().recoverPartitionVersion(info);
                     break;
+                case OperationType.OP_SET_CN_RESOURCE_ISOLATION:
+                    UserComputeNodeResourceInfo userComputeNodeResourceInfo =
+                            (UserComputeNodeResourceInfo) journal.getData();
+                    GlobalStateMgr.getCurrentState().getComputeNodeResourceIsolationMgr()
+                            .replaySetUserComputeNodeResource(userComputeNodeResourceInfo);
+                    break;
                 default: {
                     if (Config.ignore_unknown_log_id) {
                         LOG.warn("UNKNOWN Operation Type {}", opCode);
@@ -1200,9 +1208,9 @@ public class EditLog {
         // because starmgr state change happens before global state mgr state change,
         // it will write log before global state mgr becomes leader
         Preconditions.checkState(RunMode.getCurrentRunMode() != RunMode.SHARED_NOTHING ||
-                                 GlobalStateMgr.getCurrentState().isLeader(),
-                                 "Current node is not leader, but " +
-                                 GlobalStateMgr.getCurrentState().getFeType() + ", submit log is not allowed");
+                        GlobalStateMgr.getCurrentState().isLeader(),
+                "Current node is not leader, but " +
+                        GlobalStateMgr.getCurrentState().getFeType() + ", submit log is not allowed");
         DataOutputBuffer buffer = new DataOutputBuffer(OUTPUT_BUFFER_INIT_SIZE);
 
         // 1. serialized
@@ -2212,5 +2220,11 @@ public class EditLog {
 
     public void logRecoverPartitionVersion(PartitionVersionRecoveryInfo info) {
         logEdit(OperationType.OP_RECOVER_PARTITION_VERSION, info);
+    }
+
+    public void logSetUserComputeNodeResource(UserIdentity user, List<Long> ids) {
+        UserComputeNodeResourceInfo userComputeNodeResourceInfo =
+                new UserComputeNodeResourceInfo(user.getUser(), new HashSet<>(ids));
+        logEdit(OperationType.OP_SET_CN_RESOURCE_ISOLATION, userComputeNodeResourceInfo);
     }
 }

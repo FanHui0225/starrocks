@@ -73,6 +73,41 @@ public class DefaultSharedDataWorkerProvider implements WorkerProvider {
         }
     }
 
+    public static class FactoryWithResourceIsolation extends Factory {
+
+        final String u;
+
+        FactoryWithResourceIsolation(String u) {
+            this.u = u;
+        }
+
+        @Override
+        public DefaultSharedDataWorkerProvider captureAvailableWorkers(SystemInfoService systemInfoService,
+                                                                       boolean preferComputeNode,
+                                                                       int numUsedComputeNodes) {
+            ImmutableMap<Long, ComputeNode> idToComputeNode =
+                    GlobalStateMgr.getCurrentWarehouseMgr().getComputeNodesFromWarehouse();
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("idToComputeNode: {}", idToComputeNode);
+            }
+
+            return new DefaultSharedDataWorkerProvider(idToComputeNode, filterAvailableWorkers(idToComputeNode));
+        }
+
+        private ImmutableMap<Long, ComputeNode> filterAvailableWorkers(ImmutableMap<Long, ComputeNode> workers) {
+            Set<Long> availableComputeNodeIds = GlobalStateMgr.getCurrentState()
+                    .getComputeNodeResourceIsolationMgr()
+                    .getUserAvailableComputeNodeIds(u);
+            ImmutableMap.Builder<Long, ComputeNode> builder = new ImmutableMap.Builder<>();
+            for (Map.Entry<Long, ComputeNode> entry : workers.entrySet()) {
+                if (entry.getValue().isAlive() && !SimpleScheduler.isInBlacklist(entry.getKey()) && availableComputeNodeIds.contains(entry.getValue().getId())) {
+                    builder.put(entry);
+                }
+            }
+            return builder.build();
+        }
+    }
+
     /**
      * All the compute nodes (including backends), including those that are not alive or in block list.
      */

@@ -101,15 +101,18 @@ public class SetExecutor {
                 throw new DdlException("authentication info for user " +
                         setResourceIsolationVar.getUserIdent() + " not found");
             }
-            UserIdentity currentUser = ConnectContext.get().getCurrentUserIdentity();
+            UserIdentity currentUser = ctx.getCurrentUserIdentity();
             if (!currentUser.getUser().equals(AuthenticationMgr.ROOT_USER)) {
                 throw new DdlException("only allow set resource isolation for other user," +
                         " current user: " + currentUser.getUser());
             }
-            LOG.info("=================>> Set Resource Isolation Var Successful!, " +
+            LOG.info("Debug =================>> Set Resource Isolation Var Proposal Successful!, " +
                             "user: {}, hosts: {}  <<=================",
                     setResourceIsolationVar.getUserIdent().getUser(),
                     setResourceIsolationVar.getHosts());
+            GlobalStateMgr.getCurrentState()
+                    .getComputeNodeResourceIsolationMgr()
+                    .setUserComputeNodeResource(userAuthenticationInfo, setResourceIsolationVar.getHosts());
         }
     }
 
