@@ -21,9 +21,9 @@ import com.starrocks.server.GlobalStateMgr;
 import com.starrocks.sql.ast.UserIdentity;
 import com.starrocks.system.ComputeNode;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -65,16 +65,18 @@ public class ComputeNodeResourceIsolationMgr {
             } else {
                 computeNodes = idToComputeNode.values().stream().collect(Collectors.toMap(ComputeNode::getHost, cn -> cn));
             }
-            List<Long> cn_ids = hosts.stream()
+            List<Long> cnIds = hosts.stream()
                     .filter(host -> StringUtils.isNotBlank(host) && computeNodes.containsKey(host))
                     .map(host -> computeNodes.get(host).getId())
                     .collect(Collectors.toList());
-            if (cn_ids.isEmpty()) {
-                LOG.warn("Compute node resource isolation manager, user: {}, availableComputeNodes are empty.");
+            if (cnIds.isEmpty()) {
+                LOG.warn("Compute node resource isolation manager, user: {}, " +
+                        "availableComputeNodes are empty.");
                 return;
             }
-            GlobalStateMgr.getCurrentState().getEditLog().logSetUserComputeNodeResource(user, cn_ids);
-            LOG.info("Debug -> Compute node resource isolation manager, set user compute node resource, {},", cn_ids);
+            GlobalStateMgr.getCurrentState().getEditLog().logSetUserComputeNodeResource(user, cnIds);
+            LOG.info("Debug -> Compute node resource isolation manager, " +
+                    "set user compute node resource, {},", cnIds);
         } finally {
             writeUnlock();
         }
@@ -86,7 +88,8 @@ public class ComputeNodeResourceIsolationMgr {
             this.userAvailableComputeNodeIds.put(
                     userComputeNodeResourceInfo.getResourceUser(),
                     userComputeNodeResourceInfo.getComputeNodeIds());
-            LOG.info("Debug -> Compute node resource isolation manager, replay set user compute node resource, {},", userComputeNodeResourceInfo);
+            LOG.info("Debug -> Compute node resource isolation manager," +
+                    " replay set user compute node resource, {},", userComputeNodeResourceInfo);
         } finally {
             writeUnlock();
         }

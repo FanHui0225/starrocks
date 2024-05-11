@@ -100,7 +100,9 @@ public class DefaultSharedDataWorkerProvider implements WorkerProvider {
                     .getUserAvailableComputeNodeIds(u);
             ImmutableMap.Builder<Long, ComputeNode> builder = new ImmutableMap.Builder<>();
             for (Map.Entry<Long, ComputeNode> entry : workers.entrySet()) {
-                if (entry.getValue().isAlive() && !SimpleScheduler.isInBlacklist(entry.getKey()) && availableComputeNodeIds.contains(entry.getValue().getId())) {
+                if (entry.getValue().isAlive()
+                        && !SimpleScheduler.isInBlacklist(entry.getKey())
+                        && availableComputeNodeIds.contains(entry.getValue().getId())) {
                     builder.put(entry);
                 }
             }
