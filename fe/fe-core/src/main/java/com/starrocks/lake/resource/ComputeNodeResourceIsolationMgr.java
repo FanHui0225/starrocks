@@ -25,6 +25,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -73,6 +74,7 @@ public class ComputeNodeResourceIsolationMgr {
                         "availableComputeNodes are empty.");
                 return;
             }
+            this.userAvailableComputeNodeIds.put(user.getUser(), new HashSet<>(cnIds));
             GlobalStateMgr.getCurrentState().getEditLog().logSetUserComputeNodeResource(user, cnIds);
             LOG.info("Debug -> Compute node resource isolation manager, " +
                     "set user compute node resource, {},", cnIds);
