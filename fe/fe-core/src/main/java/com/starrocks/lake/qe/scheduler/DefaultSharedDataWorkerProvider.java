@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
 
@@ -95,20 +96,21 @@ public class DefaultSharedDataWorkerProvider implements WorkerProvider {
         }
 
         private ImmutableMap<Long, ComputeNode> filterAvailableWorkers(ImmutableMap<Long, ComputeNode> workers) {
-            Set<Long> availableComputeNodeIds = GlobalStateMgr.getCurrentState()
+            Function<Long, Boolean> availableFilterFunc = GlobalStateMgr.getCurrentState()
                     .getComputeNodeResourceIsolationMgr()
-                    .getUserAvailableComputeNodeIds(u);
+                    .getUserAvailableFilterFunc(u);
+
             ImmutableMap.Builder<Long, ComputeNode> builder = new ImmutableMap.Builder<>();
             for (Map.Entry<Long, ComputeNode> entry : workers.entrySet()) {
                 if (entry.getValue().isAlive()
                         && !SimpleScheduler.isInBlacklist(entry.getKey())
-                        && availableComputeNodeIds.contains(entry.getValue().getId())) {
+                        && availableFilterFunc.apply(entry.getValue().getId())) {
                     builder.put(entry);
                 }
             }
 
             ImmutableMap<Long, ComputeNode> filterAvailableWorkers = builder.build();
-            LOG.info("Resource isolation filter available workers: {}", filterAvailableWorkers);
+            LOG.info("Debug -> resource isolation filter available workers: {}", filterAvailableWorkers);
             return filterAvailableWorkers;
         }
     }

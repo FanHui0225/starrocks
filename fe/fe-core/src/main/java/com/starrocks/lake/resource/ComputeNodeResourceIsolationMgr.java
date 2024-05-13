@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -101,6 +102,23 @@ public class ComputeNodeResourceIsolationMgr {
         try {
             return this.userAvailableComputeNodeIds.containsKey(u) ?
                     Collections.emptySet() : this.userAvailableComputeNodeIds.get(u);
+        } finally {
+            readUnlock();
+        }
+    }
+
+    public Function<Long, Boolean> getUserAvailableFilterFunc(String u) {
+        readLock();
+        try {
+            return new Function<Long, Boolean>() {
+
+                final Set<Long> nodeIds = getUserAvailableComputeNodeIds(u);
+
+                @Override
+                public Boolean apply(Long id) {
+                    return nodeIds.isEmpty() ? true : nodeIds.contains(id);
+                }
+            };
         } finally {
             readUnlock();
         }
