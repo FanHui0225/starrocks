@@ -101,7 +101,7 @@ public class ComputeNodeResourceIsolationMgr {
         readLock();
         try {
             return this.userAvailableComputeNodeIds.containsKey(u) ?
-                    Collections.emptySet() : this.userAvailableComputeNodeIds.get(u);
+                    this.userAvailableComputeNodeIds.get(u) : Collections.emptySet();
         } finally {
             readUnlock();
         }
