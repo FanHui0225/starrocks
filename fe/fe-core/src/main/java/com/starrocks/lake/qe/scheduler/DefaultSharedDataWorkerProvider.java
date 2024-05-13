@@ -21,10 +21,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.starrocks.common.FeConstants;
+import com.starrocks.qe.ConnectContext;
 import com.starrocks.qe.SimpleScheduler;
 import com.starrocks.qe.scheduler.NonRecoverableException;
 import com.starrocks.qe.scheduler.WorkerProvider;
 import com.starrocks.server.GlobalStateMgr;
+import com.starrocks.sql.ast.UserIdentity;
 import com.starrocks.system.ComputeNode;
 import com.starrocks.system.SystemInfoService;
 import org.apache.logging.log4j.LogManager;
@@ -76,10 +78,10 @@ public class DefaultSharedDataWorkerProvider implements WorkerProvider {
 
     public static class FactoryWithResourceIsolation extends Factory {
 
-        final String u;
+        final ConnectContext ctx;
 
-        public FactoryWithResourceIsolation(String u) {
-            this.u = u;
+        public FactoryWithResourceIsolation(ConnectContext ctx) {
+            this.ctx = ctx;
         }
 
         @Override
@@ -96,9 +98,10 @@ public class DefaultSharedDataWorkerProvider implements WorkerProvider {
         }
 
         private ImmutableMap<Long, ComputeNode> filterAvailableWorkers(ImmutableMap<Long, ComputeNode> workers) {
+            UserIdentity user = ctx.getCurrentUserIdentity();
             Function<Long, Boolean> availableFilterFunc = GlobalStateMgr.getCurrentState()
                     .getComputeNodeResourceIsolationMgr()
-                    .getUserAvailableFilterFunc(u);
+                    .getUserAvailableFilterFunc(user);
 
             ImmutableMap.Builder<Long, ComputeNode> builder = new ImmutableMap.Builder<>();
             for (Map.Entry<Long, ComputeNode> entry : workers.entrySet()) {
@@ -110,7 +113,8 @@ public class DefaultSharedDataWorkerProvider implements WorkerProvider {
             }
 
             ImmutableMap<Long, ComputeNode> filterAvailableWorkers = builder.build();
-            LOG.info("Debug -> resource isolation filter available workers: {}", filterAvailableWorkers);
+            LOG.info("Debug -> resource isolation " +
+                    "filter available workers: {}, user: {}.", filterAvailableWorkers, user);
             return filterAvailableWorkers;
         }
     }

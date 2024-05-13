@@ -107,12 +107,13 @@ public class ComputeNodeResourceIsolationMgr {
         }
     }
 
-    public Function<Long, Boolean> getUserAvailableFilterFunc(String u) {
+    public Function<Long, Boolean> getUserAvailableFilterFunc(UserIdentity u) {
         readLock();
         try {
             return new Function<Long, Boolean>() {
-
-                final Set<Long> nodeIds = getUserAvailableComputeNodeIds(u);
+                final Set<Long> nodeIds = u == null ?
+                        Collections.emptySet() :
+                        getUserAvailableComputeNodeIds(u.getUser());
 
                 @Override
                 public Boolean apply(Long id) {
