@@ -77,7 +77,7 @@ public class DefaultSharedDataWorkerProvider implements WorkerProvider {
 
         final String u;
 
-        FactoryWithResourceIsolation(String u) {
+        public FactoryWithResourceIsolation(String u) {
             this.u = u;
         }
 
@@ -106,7 +106,10 @@ public class DefaultSharedDataWorkerProvider implements WorkerProvider {
                     builder.put(entry);
                 }
             }
-            return builder.build();
+
+            ImmutableMap<Long, ComputeNode> filterAvailableWorkers = builder.build();
+            LOG.info("Resource isolation filter available workers: {}", filterAvailableWorkers);
+            return filterAvailableWorkers;
         }
     }
 

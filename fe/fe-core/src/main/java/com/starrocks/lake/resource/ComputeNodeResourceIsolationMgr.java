@@ -71,7 +71,7 @@ public class ComputeNodeResourceIsolationMgr {
                     .collect(Collectors.toList());
             if (cnIds.isEmpty()) {
                 LOG.warn("Compute node resource isolation manager, user: {}, " +
-                        "availableComputeNodes are empty.");
+                        "availableComputeNodes are empty.", user.getUser());
                 return;
             }
             this.userAvailableComputeNodeIds.put(user.getUser(), new HashSet<>(cnIds));

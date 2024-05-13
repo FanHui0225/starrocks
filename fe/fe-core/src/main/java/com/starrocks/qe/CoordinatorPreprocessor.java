@@ -140,7 +140,8 @@ public class CoordinatorPreprocessor {
 
     private WorkerProvider.Factory newWorkerProviderFactory() {
         if (RunMode.isSharedDataMode()) {
-            return new DefaultSharedDataWorkerProvider.Factory();
+            return new DefaultSharedDataWorkerProvider.FactoryWithResourceIsolation(
+                    connectContext.getCurrentUserIdentity().getUser());
         } else {
             return new DefaultWorkerProvider.Factory();
         }
