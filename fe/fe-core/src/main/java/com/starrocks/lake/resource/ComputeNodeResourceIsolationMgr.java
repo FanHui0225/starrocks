@@ -20,7 +20,6 @@ import com.starrocks.common.util.DnsCache;
 import com.starrocks.server.GlobalStateMgr;
 import com.starrocks.sql.ast.UserIdentity;
 import com.starrocks.system.ComputeNode;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
