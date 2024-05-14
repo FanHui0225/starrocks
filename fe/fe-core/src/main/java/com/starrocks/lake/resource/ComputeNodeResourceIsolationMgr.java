@@ -17,6 +17,11 @@ package com.starrocks.lake.resource;
 import com.google.common.collect.ImmutableMap;
 import com.starrocks.common.Config;
 import com.starrocks.common.util.DnsCache;
+import com.starrocks.persist.metablock.SRMetaBlockEOFException;
+import com.starrocks.persist.metablock.SRMetaBlockException;
+import com.starrocks.persist.metablock.SRMetaBlockID;
+import com.starrocks.persist.metablock.SRMetaBlockReader;
+import com.starrocks.persist.metablock.SRMetaBlockWriter;
 import com.starrocks.server.GlobalStateMgr;
 import com.starrocks.sql.ast.UserIdentity;
 import com.starrocks.system.ComputeNode;
@@ -24,6 +29,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -41,8 +48,9 @@ public class ComputeNodeResourceIsolationMgr {
 
     private static final Logger LOG = LogManager.getLogger(ComputeNodeResourceIsolationMgr.class);
 
-    private final boolean enabled;
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private final transient boolean enabled;
+
+    private final transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     //userName -> cn ids
     private final Map<String, Set<Long>> userAvailableComputeNodeIds = new ConcurrentHashMap<>();
 
@@ -141,4 +149,33 @@ public class ComputeNodeResourceIsolationMgr {
         lock.writeLock().unlock();
     }
 
+    public void load(SRMetaBlockReader reader) throws IOException, SRMetaBlockException, SRMetaBlockEOFException {
+        int len = reader.readJson(int.class);
+        for (int i = 0; i < len; i++) {
+            UserComputeNodeResourceInfo userComputeNodeResourceInfo = reader.readJson(UserComputeNodeResourceInfo.class);
+            this.userAvailableComputeNodeIds.put(
+                    userComputeNodeResourceInfo.getResourceUser(),
+                    userComputeNodeResourceInfo.getComputeNodeIds());
+        }
+        LOG.info("loaded {} userAvailableComputeNodeIds", len);
+    }
+
+    public void save(DataOutputStream dos) throws IOException {
+        try {
+            int len = userAvailableComputeNodeIds.size();
+            SRMetaBlockWriter writer = new SRMetaBlockWriter(dos, SRMetaBlockID.COMPUTE_NODE_RESOURCE_ISOLATION_MGR, len);
+            writer.writeJson(len);
+            for (Map.Entry<String, Set<Long>> entry : userAvailableComputeNodeIds.entrySet()) {
+                UserComputeNodeResourceInfo userComputeNodeResourceInfo =
+                        new UserComputeNodeResourceInfo(entry.getKey(), entry.getValue());
+                writer.writeJson(userComputeNodeResourceInfo);
+            }
+            LOG.info("saved {} userAvailableComputeNodeIds", len);
+            writer.close();
+        } catch (SRMetaBlockException e) {
+            IOException exception = new IOException("failed to save ComputeNodeResourceIsolationMgr!");
+            exception.initCause(e);
+            throw exception;
+        }
+    }
 }

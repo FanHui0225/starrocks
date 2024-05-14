@@ -92,6 +92,8 @@ public class SRMetaBlockID {
 
     public static final SRMetaBlockID REPLICATION_MGR = new SRMetaBlockID(30);
 
+    public static final SRMetaBlockID COMPUTE_NODE_RESOURCE_ISOLATION_MGR = new SRMetaBlockID(40);
+
     @Override
     public String toString() {
         return String.valueOf(id);

@@ -22,12 +22,13 @@ import com.starrocks.persist.gson.GsonUtils;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Set;
 
 /**
  * Created by liujing on 2024/5/10.
  */
-public class UserComputeNodeResourceInfo implements Writable {
+public class UserComputeNodeResourceInfo implements Writable, Serializable {
 
     @SerializedName(value = "resourceUser")
     private String resourceUser;

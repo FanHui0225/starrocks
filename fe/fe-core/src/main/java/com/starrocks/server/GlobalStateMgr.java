@@ -1624,6 +1624,7 @@ public class GlobalStateMgr {
                         .put(SRMetaBlockID.GLOBAL_FUNCTION_MGR, globalFunctionMgr::load)
                         .put(SRMetaBlockID.STORAGE_VOLUME_MGR, storageVolumeMgr::load)
                         .put(SRMetaBlockID.REPLICATION_MGR, replicationMgr::load)
+                        .put(SRMetaBlockID.COMPUTE_NODE_RESOURCE_ISOLATION_MGR, computeNodeResourceIsolationMgr::load)
                         .build();
 
                 Set<SRMetaBlockID> metaMgrMustExists = new HashSet<>(loadImages.keySet());
@@ -2013,6 +2014,7 @@ public class GlobalStateMgr {
                     globalFunctionMgr.save(dos);
                     storageVolumeMgr.save(dos);
                     replicationMgr.save(dos);
+                    computeNodeResourceIsolationMgr.save(dos);
                 } catch (SRMetaBlockException e) {
                     LOG.error("Save meta block failed ", e);
                     throw new IOException("Save meta block failed ", e);
