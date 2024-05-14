@@ -187,9 +187,6 @@ public class Deployer {
             }
 
             for (FragmentInstance instance : stageInstances) {
-                LOG.info("Debug -> resource isolation " +
-                        "Fragment instance worker: {}.", instance.getWorker());
-
                 TExecPlanFragmentParams request =
                         tFragmentInstanceFactory.create(instance, curDescTable, accTabletSinkDop, totalTableSinkDop);
                 if (enablePipelineTableSinkDop) {
