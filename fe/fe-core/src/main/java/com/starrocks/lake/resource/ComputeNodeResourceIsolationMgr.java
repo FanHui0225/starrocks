@@ -88,7 +88,7 @@ public class ComputeNodeResourceIsolationMgr {
             }
             this.userAvailableComputeNodeIds.put(user.getUser(), new HashSet<>(cnIds));
             GlobalStateMgr.getCurrentState().getEditLog().logSetUserComputeNodeResource(user, cnIds);
-            LOG.info("Debug -> Compute node resource isolation manager, " +
+            LOG.info("Compute node resource isolation manager, " +
                     "set user compute node resource, {},", cnIds);
         } finally {
             writeUnlock();
@@ -105,7 +105,7 @@ public class ComputeNodeResourceIsolationMgr {
             this.userAvailableComputeNodeIds.put(
                     userComputeNodeResourceInfo.getResourceUser(),
                     userComputeNodeResourceInfo.getComputeNodeIds());
-            LOG.info("Debug -> Compute node resource isolation manager," +
+            LOG.info("Compute node resource isolation manager," +
                     " replay set user compute node resource, {},", userComputeNodeResourceInfo);
         } finally {
             writeUnlock();

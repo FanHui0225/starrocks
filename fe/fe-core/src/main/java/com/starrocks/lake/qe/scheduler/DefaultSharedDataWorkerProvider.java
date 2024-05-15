@@ -113,8 +113,8 @@ public class DefaultSharedDataWorkerProvider implements WorkerProvider {
             }
 
             ImmutableMap<Long, ComputeNode> filterAvailableWorkers = builder.build();
-            LOG.info("Debug -> resource isolation " +
-                    "filter available workers: {}, user: {}.", filterAvailableWorkers, user);
+            LOG.info("Filter with resource isolation available," +
+                    " workers: {}, user: {}.", filterAvailableWorkers, user);
             return filterAvailableWorkers;
         }
     }
