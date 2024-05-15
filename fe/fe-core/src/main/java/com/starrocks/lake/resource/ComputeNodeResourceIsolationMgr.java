@@ -169,7 +169,7 @@ public class ComputeNodeResourceIsolationMgr {
         final int len = userAvailableComputeNodeIds.size();
         if (len > 0) {
             try {
-                SRMetaBlockWriter writer = new SRMetaBlockWriter(dos, SRMetaBlockID.COMPUTE_NODE_RESOURCE_ISOLATION_MGR, len);
+                SRMetaBlockWriter writer = new SRMetaBlockWriter(dos, SRMetaBlockID.COMPUTE_NODE_RESOURCE_ISOLATION_MGR, len + 2);
                 writer.writeJson(MAGIC_HEADER);
                 writer.writeJson(len);
                 for (Map.Entry<String, Set<Long>> entry : userAvailableComputeNodeIds.entrySet()) {
