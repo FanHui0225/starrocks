@@ -23,6 +23,7 @@ import com.starrocks.persist.metablock.SRMetaBlockID;
 import com.starrocks.persist.metablock.SRMetaBlockReader;
 import com.starrocks.persist.metablock.SRMetaBlockWriter;
 import com.starrocks.server.GlobalStateMgr;
+import com.starrocks.server.RunMode;
 import com.starrocks.sql.ast.UserIdentity;
 import com.starrocks.system.ComputeNode;
 import org.apache.commons.lang.StringUtils;
@@ -50,14 +51,14 @@ public class ComputeNodeResourceIsolationMgr {
 
     private static final int MAGIC_HEADER = 81899536;
 
-    private final transient boolean enabled;
+    private final boolean enabled;
 
-    private final transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     //userName -> cn ids
     private final Map<String, Set<Long>> userAvailableComputeNodeIds = new ConcurrentHashMap<>();
 
-    public ComputeNodeResourceIsolationMgr(boolean enabled) {
-        this.enabled = enabled;
+    public ComputeNodeResourceIsolationMgr() {
+        this.enabled = RunMode.isSharedDataMode() && Config.enable_compute_node_resource_isolation;
     }
 
     public void setUserComputeNodeResource(UserIdentity user, List<String> hosts) {
@@ -70,7 +71,7 @@ public class ComputeNodeResourceIsolationMgr {
             Map<String, ComputeNode> computeNodes;
             ImmutableMap<Long, ComputeNode> idToComputeNode =
                     GlobalStateMgr.getCurrentWarehouseMgr().getComputeNodesFromWarehouse();
-            if (Config.compute_node_resource_group_isolation_by_ip) {
+            if (Config.compute_node_resource_isolation_by_ip) {
                 hosts.stream().map(DnsCache::tryLookup).collect(Collectors.toList());
                 computeNodes = idToComputeNode.values().stream().collect(Collectors.toMap(ComputeNode::getIP, cn -> cn));
             } else {
@@ -95,6 +96,10 @@ public class ComputeNodeResourceIsolationMgr {
     }
 
     public void replaySetUserComputeNodeResource(UserComputeNodeResourceInfo userComputeNodeResourceInfo) {
+        if (!enabled) {
+            LOG.warn("Compute node resource isolation manager, not enabled.");
+            return;
+        }
         writeLock();
         try {
             this.userAvailableComputeNodeIds.put(

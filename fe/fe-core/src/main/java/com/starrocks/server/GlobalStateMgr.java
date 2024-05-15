@@ -810,7 +810,7 @@ public class GlobalStateMgr {
             this.storageVolumeMgr = new SharedNothingStorageVolumeMgr();
         }
 
-        this.computeNodeResourceIsolationMgr = new ComputeNodeResourceIsolationMgr(RunMode.isSharedDataMode());
+        this.computeNodeResourceIsolationMgr = new ComputeNodeResourceIsolationMgr();
 
         GlobalStateMgr gsm = this;
         this.execution = new StateChangeExecution() {
