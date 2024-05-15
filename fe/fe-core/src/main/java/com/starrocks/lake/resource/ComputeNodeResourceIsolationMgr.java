@@ -48,6 +48,8 @@ public class ComputeNodeResourceIsolationMgr {
 
     private static final Logger LOG = LogManager.getLogger(ComputeNodeResourceIsolationMgr.class);
 
+    private static final int MAGIC_HEADER = 81899536;
+
     private final transient boolean enabled;
 
     private final transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -150,32 +152,38 @@ public class ComputeNodeResourceIsolationMgr {
     }
 
     public void load(SRMetaBlockReader reader) throws IOException, SRMetaBlockException, SRMetaBlockEOFException {
-        int len = reader.readJson(int.class);
-        for (int i = 0; i < len; i++) {
-            UserComputeNodeResourceInfo userComputeNodeResourceInfo = reader.readJson(UserComputeNodeResourceInfo.class);
-            this.userAvailableComputeNodeIds.put(
-                    userComputeNodeResourceInfo.getResourceUser(),
-                    userComputeNodeResourceInfo.getComputeNodeIds());
+        int magicHeader = reader.readJson(int.class);
+        if (magicHeader == MAGIC_HEADER) {
+            int len = reader.readJson(int.class);
+            for (int i = 0; i < len; i++) {
+                UserComputeNodeResourceInfo userComputeNodeResourceInfo = reader.readJson(UserComputeNodeResourceInfo.class);
+                this.userAvailableComputeNodeIds.put(
+                        userComputeNodeResourceInfo.getResourceUser(),
+                        userComputeNodeResourceInfo.getComputeNodeIds());
+            }
+            LOG.info("loaded {} userAvailableComputeNodeIds", len);
         }
-        LOG.info("loaded {} userAvailableComputeNodeIds", len);
     }
 
     public void save(DataOutputStream dos) throws IOException {
-        try {
-            int len = userAvailableComputeNodeIds.size();
-            SRMetaBlockWriter writer = new SRMetaBlockWriter(dos, SRMetaBlockID.COMPUTE_NODE_RESOURCE_ISOLATION_MGR, len);
-            writer.writeJson(len);
-            for (Map.Entry<String, Set<Long>> entry : userAvailableComputeNodeIds.entrySet()) {
-                UserComputeNodeResourceInfo userComputeNodeResourceInfo =
-                        new UserComputeNodeResourceInfo(entry.getKey(), entry.getValue());
-                writer.writeJson(userComputeNodeResourceInfo);
+        final int len = userAvailableComputeNodeIds.size();
+        if (len > 0) {
+            try {
+                SRMetaBlockWriter writer = new SRMetaBlockWriter(dos, SRMetaBlockID.COMPUTE_NODE_RESOURCE_ISOLATION_MGR, len);
+                writer.writeJson(MAGIC_HEADER);
+                writer.writeJson(len);
+                for (Map.Entry<String, Set<Long>> entry : userAvailableComputeNodeIds.entrySet()) {
+                    UserComputeNodeResourceInfo userComputeNodeResourceInfo =
+                            new UserComputeNodeResourceInfo(entry.getKey(), entry.getValue());
+                    writer.writeJson(userComputeNodeResourceInfo);
+                }
+                LOG.info("saved {} userAvailableComputeNodeIds", len);
+                writer.close();
+            } catch (SRMetaBlockException e) {
+                IOException exception = new IOException("failed to save ComputeNodeResourceIsolationMgr!");
+                exception.initCause(e);
+                throw exception;
             }
-            LOG.info("saved {} userAvailableComputeNodeIds", len);
-            writer.close();
-        } catch (SRMetaBlockException e) {
-            IOException exception = new IOException("failed to save ComputeNodeResourceIsolationMgr!");
-            exception.initCause(e);
-            throw exception;
         }
     }
 }
