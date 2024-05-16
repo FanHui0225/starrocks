@@ -382,7 +382,7 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
                         Set<Long> wIds = new HashSet(wg.getAllWorkerIds(true));
                         if (wIds.isEmpty()) {
                             ctx.done(new NoAliveWorkersException("WorkerGroup {} doesn't have alive workers",
-                                    new Object[]{ctx.getWorkerGroupId()}));
+                                    ctx.getWorkerGroupId()));
                         } else {
                             existReplicas.forEach(wIds::remove);
                             if (!this.requestLocker.tryLock(ctx, shardManager)) {
