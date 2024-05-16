@@ -18,6 +18,10 @@ package com.starrocks.staros;
 import com.staros.manager.StarManager;
 import com.staros.manager.StarManagerServer;
 import com.staros.metrics.MetricsSystem;
+import com.staros.schedule.ReflectionUtils;
+import com.staros.schedule.ShardSchedulerV3;
+import com.staros.service.ServiceManager;
+import com.staros.shard.ShardChecker;
 import com.starrocks.common.Config;
 import com.starrocks.ha.FrontendNodeType;
 import com.starrocks.ha.StateChangeExecution;
@@ -158,8 +162,28 @@ public class StarMgrServer {
 
         // start rpc server
         starMgrServer = new StarManagerServer(journalSystem);
-        starMgrServer.start(com.staros.util.Config.STARMGR_RPC_PORT);
 
+        // switch to custom com.staros.schedule.ShardSchedulerV3
+        StarManager starManager = starMgrServer.getStarManager();
+        ServiceManager serviceManager = starManager.getServiceManager();
+        ShardChecker shardChecker;
+        ShardSchedulerV3 shardSchedulerV3 = new ShardSchedulerV3(
+                starManager.getServiceManager(),
+                starManager.getWorkerManager());
+        try {
+            // set shardScheduler field
+            ReflectionUtils.setFieldValue(starManager, "shardScheduler", shardSchedulerV3);
+
+            // set scheduler field
+            shardChecker = ReflectionUtils.getFieldValue("shardChecker", starManager);
+            ReflectionUtils.setFieldValue(shardChecker, "scheduler", shardSchedulerV3);
+
+            serviceManager.setShardScheduler(shardSchedulerV3);
+        } catch (IllegalAccessException e) {
+            LOG.error("Switch to custom com.staros.schedule.ShardSchedulerV3 error!", e);
+        }
+
+        starMgrServer.start(com.staros.util.Config.STARMGR_RPC_PORT);
         StarOSAgent starOsAgent = GlobalStateMgr.getCurrentState().getStarOSAgent();
         if (starOsAgent != null && !starOsAgent.init(starMgrServer)) {
             LOG.error("init star os agent failed.");
