@@ -52,7 +52,6 @@ import com.staros.shard.Shard;
 import com.staros.shard.ShardGroup;
 import com.staros.shard.ShardManager;
 import com.staros.shard.ShardPolicyFilter;
-import com.staros.util.AbstractServer;
 import com.staros.util.Config;
 import com.staros.util.LockCloseable;
 import com.staros.util.Utils;
