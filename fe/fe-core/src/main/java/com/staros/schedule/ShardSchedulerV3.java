@@ -1,3 +1,37 @@
+// Copyright 2021-present StarRocks, Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// This file is based on code available under the Apache license here:
+//   https://github.com/apache/incubator-doris/blob/master/fe/fe-core/src/main/java/org/apache/doris/task/AgentBatchTask.java
+
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package com.staros.schedule;
 
 import com.google.common.base.Preconditions;
@@ -27,6 +61,8 @@ import com.staros.worker.WorkerGroup;
 import com.staros.worker.WorkerManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import io.prometheus.metrics.core.datapoints.CounterDataPoint;
+import io.prometheus.metrics.core.metrics.Counter;
 
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -52,9 +88,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.prometheus.metrics.core.datapoints.CounterDataPoint;
-import io.prometheus.metrics.core.metrics.Counter;
-
 /**
  * Created by liujing on 2024/5/15.
  */
@@ -79,7 +112,11 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
     private final CounterDataPoint addShardOpCounter;
     private final CounterDataPoint removeShardOpCounter;
 
-    private ShardSchedulerV3.DispatchTask<StarException> dispatchTaskForAddToWorker(String serviceId, List<Long> shardIds, long workerId, int priority) {
+    private ShardSchedulerV3.DispatchTask<StarException> dispatchTaskForAddToWorker(
+            String serviceId,
+            List<Long> shardIds,
+            long workerId,
+            int priority) {
         Callable<StarException> callable = () -> {
             try {
                 this.executeAddToWorker(serviceId, shardIds, workerId);
@@ -111,7 +148,11 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
         }, true, priority, description);
     }
 
-    private ShardSchedulerV3.DispatchTask<StarException> dispatchTaskForRemoveFromWorker(String serviceId, List<Long> shardIds, long workerId, int priority) {
+    private ShardSchedulerV3.DispatchTask<StarException> dispatchTaskForRemoveFromWorker(
+            String serviceId,
+            List<Long> shardIds,
+            long workerId,
+            int priority) {
         Callable<StarException> callable = () -> {
             try {
                 this.executeRemoveFromWorker(serviceId, shardIds, workerId);
@@ -183,14 +224,15 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
     public void scheduleAddToDefaultGroup(String serviceId, List<Long> shardIds) throws StarException {
         WorkerGroup group = this.workerManager.getDefaultWorkerGroup(serviceId);
         if (group == null) {
-            throw new StarException(ExceptionCode.NOT_EXIST, String.format("DefaultWorkerGroup not exist for service %s", serviceId));
+            throw new StarException(ExceptionCode.NOT_EXIST,
+                    String.format("DefaultWorkerGroup not exist for service %s", serviceId));
         } else {
             this.scheduleAddToGroup(serviceId, shardIds, group.getGroupId());
         }
     }
 
     public void scheduleAsyncRemoveFromGroup(String serviceId, long shardId, long workerGroupId) throws StarException {
-        ScheduleRequestContext ctx = new ScheduleRequestContext(serviceId, shardId, workerGroupId, (CountDownLatch) null);
+        ScheduleRequestContext ctx = new ScheduleRequestContext(serviceId, shardId, workerGroupId, null);
         this.submitCalcTaskInternal(() -> {
             this.executeRemoveFromGroupPhase1(ctx);
         }, 0L);
@@ -233,12 +275,20 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
     }
 
     public void scheduleAddToWorker(String serviceId, List<Long> shardIds, long workerId) throws StarException {
-        ShardSchedulerV3.DispatchTask<StarException> task = this.dispatchTaskForAddToWorker(serviceId, shardIds, workerId, 20);
+        ShardSchedulerV3.DispatchTask<StarException> task = this.dispatchTaskForAddToWorker(
+                serviceId,
+                shardIds,
+                workerId,
+                20);
         this.submitDispatchTask(task, true);
     }
 
     public void scheduleAsyncAddToWorker(String serviceId, List<Long> shardIds, long workerId) throws StarException {
-        ShardSchedulerV3.DispatchTask<StarException> task = this.dispatchTaskForAddToWorker(serviceId, shardIds, workerId, 10);
+        ShardSchedulerV3.DispatchTask<StarException> task = this.dispatchTaskForAddToWorker(
+                serviceId,
+                shardIds,
+                workerId,
+                10);
         this.submitDispatchTask(task, false);
     }
 
@@ -247,12 +297,20 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
     }
 
     public void scheduleRemoveFromWorker(String serviceId, List<Long> shardIds, long workerId) throws StarException {
-        ShardSchedulerV3.DispatchTask<StarException> task = this.dispatchTaskForRemoveFromWorker(serviceId, shardIds, workerId, 10);
+        ShardSchedulerV3.DispatchTask<StarException> task = this.dispatchTaskForRemoveFromWorker(
+                serviceId,
+                shardIds,
+                workerId,
+                10);
         this.submitDispatchTask(task, true);
     }
 
     public void scheduleAsyncRemoveFromWorker(String serviceId, List<Long> shardIds, long workerId) throws StarException {
-        ShardSchedulerV3.DispatchTask<StarException> task = this.dispatchTaskForRemoveFromWorker(serviceId, shardIds, workerId, 0);
+        ShardSchedulerV3.DispatchTask<StarException> task = this.dispatchTaskForRemoveFromWorker(
+                serviceId,
+                shardIds,
+                workerId,
+                0);
         this.submitDispatchTask(task, false);
     }
 
@@ -288,11 +346,13 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
     private void executeAddToGroupPhase1Detail(ScheduleRequestContext ctx) {
         ShardManager shardManager = this.serviceManager.getShardManager(ctx.getServiceId());
         if (shardManager == null) {
-            ctx.done(new StarException(ExceptionCode.NOT_EXIST, String.format("Service %s Not Exist", ctx.getServiceId())));
+            ctx.done(new StarException(ExceptionCode.NOT_EXIST,
+                    String.format("Service %s Not Exist", ctx.getServiceId())));
         } else {
             Shard shard = shardManager.getShard(ctx.getShardId());
             if (shard == null) {
-                ctx.done(new StarException(ExceptionCode.NOT_EXIST, String.format("Shard %d Not Exist", ctx.getShardId())));
+                ctx.done(new StarException(ExceptionCode.NOT_EXIST,
+                        String.format("Shard %d Not Exist", ctx.getShardId())));
             } else {
                 int replicaNum = shard.getExpectedReplicaNum();
                 Stream<Long> longStream = shard.getReplicaWorkerIds().stream();
@@ -314,11 +374,13 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
 
                     WorkerGroup wg = this.workerManager.getWorkerGroupNoException(shard.getServiceId(), ctx.getWorkerGroupId());
                     if (wg == null) {
-                        ctx.done(new StarException(ExceptionCode.NOT_EXIST, String.format("WorkerGroup %d doesn't exist!", ctx.getWorkerGroupId())));
+                        ctx.done(new StarException(ExceptionCode.NOT_EXIST,
+                                String.format("WorkerGroup %d doesn't exist!", ctx.getWorkerGroupId())));
                     } else {
                         Set<Long> wIds = new HashSet(wg.getAllWorkerIds(true));
                         if (wIds.isEmpty()) {
-                            ctx.done(new NoAliveWorkersException("WorkerGroup {} doesn't have alive workers", new Object[]{ctx.getWorkerGroupId()}));
+                            ctx.done(new NoAliveWorkersException("WorkerGroup {} doesn't have alive workers",
+                                    new Object[]{ctx.getWorkerGroupId()}));
                         } else {
                             existReplicas.forEach(wIds::remove);
                             if (!this.requestLocker.tryLock(ctx, shardManager)) {
@@ -362,31 +424,36 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
 
                                     ShardPolicyFilter.filter(ppMap, wIds);
                                     if (wIds.isEmpty()) {
-                                        ctx.done(new StarException(ExceptionCode.SCHEDULE, String.format("Can't find worker for request: %s", ctx)));
+                                        ctx.done(new StarException(ExceptionCode.SCHEDULE,
+                                                String.format("Can't find worker for request: %s", ctx)));
                                         return;
                                     }
 
                                     Object workerIds;
                                     if (wIds.size() < desired) {
-                                        LOG.debug("Schedule requests {} workers, but only {} available. {}", desired, wIds.size(), ctx);
+                                        LOG.debug("Schedule requests {} workers, but only {} available. {}",
+                                                desired, wIds.size(), ctx);
                                         workerIds = new ArrayList(wIds);
                                     } else {
                                         ScheduleScorer scorer = new ScheduleScorer(wIds);
                                         ppMap.forEach(scorer::apply);
                                         scorer.apply(this.workerManager);
-                                        LOG.debug("final scores for selection: {}, for request {}", scorer.getScores(), ctx);
+                                        LOG.debug("final scores for selection: {}, for request {}",
+                                                scorer.getScores(), ctx);
                                         workerIds = scorer.selectHighEnd(this.scoreSelector, desired);
                                     }
 
                                     ctx.setWorkerIds((Collection) workerIds);
-                                    LOG.debug("Schedule request {}, pending schedule to workerList: {}", ctx, ctx.getWorkerIds());
+                                    LOG.debug("Schedule request {}, pending schedule to workerList: {}",
+                                            ctx, ctx.getWorkerIds());
                                     ShardSchedulerV3.DispatchTask task = this.dispatchTaskForAddToGroup(ctx, priority);
 
                                     try {
                                         this.dispatchExecutors.execute(task);
                                         cleanOp.cancel();
                                     } catch (Throwable throwable) {
-                                        LOG.error("Fail to add task {} into dispatchWorkerExecutors", task, throwable);
+                                        LOG.error("Fail to add task {} into dispatchWorkerExecutors",
+                                                task, throwable);
                                         ctx.done(new StarException(ExceptionCode.SCHEDULE, throwable.getMessage()));
                                     }
                                 } catch (Throwable throwable) {
@@ -463,17 +530,22 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
     private void executeAddToWorker(String serviceId, List<Long> shardIds, long workerId) {
         ShardManager shardManager = this.serviceManager.getShardManager(serviceId);
         if (shardManager == null) {
-            throw new StarException(ExceptionCode.NOT_EXIST, String.format("service %s not exists", serviceId));
+            throw new StarException(ExceptionCode.NOT_EXIST,
+                    String.format("service %s not exists", serviceId));
         } else {
             Worker worker = this.workerManager.getWorker(workerId);
             if (worker == null) {
-                throw new StarException(ExceptionCode.NOT_EXIST, String.format("worker %d not exists", workerId));
+                throw new StarException(ExceptionCode.NOT_EXIST,
+                        String.format("worker %d not exists", workerId));
             } else if (!worker.getServiceId().equals(serviceId)) {
-                throw new StarException(ExceptionCode.INVALID_ARGUMENT, String.format("worker %d doesn't belong to service: %s", workerId, serviceId));
+                throw new StarException(ExceptionCode.INVALID_ARGUMENT,
+                        String.format("worker %d doesn't belong to service: %s", workerId, serviceId));
             } else {
                 List<List<AddShardInfo>> batches = new ArrayList();
                 int remainShardSize = shardIds.size();
-                List<AddShardInfo> miniBatch = new ArrayList(Integer.min(remainShardSize, Config.SCHEDULER_MAX_BATCH_ADD_SHARD_SIZE));
+                List<AddShardInfo> miniBatch = new ArrayList(
+                        Integer.min(remainShardSize,
+                                Config.SCHEDULER_MAX_BATCH_ADD_SHARD_SIZE));
                 Iterator shardIdsIt = shardIds.iterator();
 
                 while (shardIdsIt.hasNext()) {
@@ -482,13 +554,16 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
                     --remainShardSize;
                     if (shard == null) {
                         if (shardIds.size() == 1) {
-                            throw new StarException(ExceptionCode.NOT_EXIST, String.format("shard %d not exists", id));
+                            throw new StarException(ExceptionCode.NOT_EXIST,
+                                    String.format("shard %d not exists", id));
                         }
                     } else {
                         miniBatch.add(shard.getAddShardInfo());
                         if (miniBatch.size() >= Config.SCHEDULER_MAX_BATCH_ADD_SHARD_SIZE) {
                             batches.add(miniBatch);
-                            miniBatch = new ArrayList(Integer.min(remainShardSize, Config.SCHEDULER_MAX_BATCH_ADD_SHARD_SIZE));
+                            miniBatch = new ArrayList(
+                                    Integer.min(remainShardSize,
+                                            Config.SCHEDULER_MAX_BATCH_ADD_SHARD_SIZE));
                         }
                     }
                 }
@@ -511,7 +586,8 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
                         shardManager.addShardReplicas(shardIds, workerId);
                     } else {
                         exception = new StarException(ExceptionCode.SCHEDULE,
-                                String.format("Schedule add shard task execution failed serviceId: %s, workerId: %d, shardIds: %s", serviceId, workerId, shardIds));
+                                String.format("Schedule add shard task execution failed serviceId: %s, workerId: %d, shardIds: %s",
+                                        serviceId, workerId, shardIds));
                     }
                 }
 
@@ -525,7 +601,8 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
     private void executeRemoveFromWorker(String serviceId, List<Long> shardIds, long workerId) {
         ShardManager shardManager = this.serviceManager.getShardManager(serviceId);
         if (shardManager == null) {
-            throw new StarException(ExceptionCode.NOT_EXIST, String.format("service %s not exist!", serviceId));
+            throw new StarException(ExceptionCode.NOT_EXIST,
+                    String.format("service %s not exist!", serviceId));
         } else {
             boolean doClean = true;
             Worker worker = this.workerManager.getWorker(workerId);
@@ -556,7 +633,8 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
 
     private void executeRemoveFromGroupPhase1(ScheduleRequestContext ctx) {
         if (!this.isRunning()) {
-            ctx.done(new StarException(ExceptionCode.SCHEDULE, "Schedule in shutdown progress"));
+            ctx.done(new StarException(ExceptionCode.SCHEDULE,
+                    "Schedule in shutdown progress"));
         } else {
             try {
                 this.executeRemoveFromGroupPhase1Detail(ctx);
@@ -569,7 +647,6 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
             } catch (Throwable throwable) {
                 ctx.done(new StarException(ExceptionCode.SCHEDULE, throwable.getMessage()));
             }
-
         }
     }
 
@@ -590,7 +667,8 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
                 shard.getReplicaWorkerIds().forEach((id) -> {
                     Worker worker = this.workerManager.getWorker(id);
                     if (worker == null) {
-                        this.scheduleAsyncRemoveFromWorker(ctx.getServiceId(), Collections.nCopies(1, ctx.getShardId()), id);
+                        this.scheduleAsyncRemoveFromWorker(ctx.getServiceId(),
+                                Collections.nCopies(1, ctx.getShardId()), id);
                     } else if (worker.getGroupId() == ctx.getWorkerGroupId()) {
                         if (!worker.isAlive()) {
                             deadWorkers.add(worker);
@@ -598,7 +676,6 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
                             healthyWorkerIds.add(worker.getWorkerId());
                         }
                     }
-
                 });
                 if (healthyWorkerIds.size() + deadWorkers.size() <= replicaNum) {
                     LOG.debug("{}, Number of replicas (include dead ones) are less than expected replica." +
@@ -624,9 +701,11 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
                                 do {
                                     if (!groupIdsIt.hasNext()) {
                                         scorer.apply(this.workerManager);
-                                        LOG.debug("final scores for selection: {}, for request {}", scorer.getScores(), ctx);
+                                        LOG.debug("final scores for selection: {}, for request {}",
+                                                scorer.getScores(), ctx);
                                         workerIds = scorer.selectLowEnd(this.scoreSelector, 1);
-                                        LOG.debug("Final selection for remove-healthy shard, request:{} selection: {}", ctx, workerIds);
+                                        LOG.debug("Final selection for remove-healthy shard, request:{} selection: {}",
+                                                ctx, workerIds);
                                         break label185;
                                     }
 
@@ -741,12 +820,24 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
     }
 
     public void doStart() {
-        this.calculateExecutors = new ScheduledThreadPoolExecutor(2, Utils.namedThreadFactory("scheduler-calc-pool"));
+        this.calculateExecutors = new ScheduledThreadPoolExecutor(
+                2,
+                Utils.namedThreadFactory("scheduler-calc-pool"));
         this.calculateExecutors.setMaximumPoolSize(2);
-        this.dispatchExecutors = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS, new PriorityBlockingQueue(), Utils.namedThreadFactory("scheduler-dispatch-pool"));
+        this.dispatchExecutors = new ThreadPoolExecutor(
+                4,
+                4,
+                0L,
+                TimeUnit.MILLISECONDS,
+                new PriorityBlockingQueue(),
+                Utils.namedThreadFactory("scheduler-dispatch-pool"));
         this.adjustPoolExecutors = new ScheduledThreadPoolExecutor(1);
         this.adjustPoolExecutors.setMaximumPoolSize(1);
-        this.adjustPoolExecutors.scheduleAtFixedRate(this::adjustScheduleThreadPoolSize, 30L, 300L, TimeUnit.SECONDS);
+        this.adjustPoolExecutors.scheduleAtFixedRate(
+                this::adjustScheduleThreadPoolSize,
+                30L,
+                300L,
+                TimeUnit.SECONDS);
     }
 
     void adjustScheduleThreadPoolSize() {
@@ -806,7 +897,8 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
     static {
         conflictPolicies = Arrays.asList(PlacementPolicy.EXCLUDE, PlacementPolicy.PACK, PlacementPolicy.SPREAD);
         METRIC_WORKER_SHARD_COUNT = MetricsSystem.registerCounter("starmgr_schedule_shard_ops",
-                "count of operations by adding/remove shards to/from worker", Lists.newArrayList(new String[]{"op"}));
+                "count of operations by adding/remove shards to/from worker",
+                Lists.newArrayList(new String[]{"op"}));
     }
 
     private static class DispatchTask<T> extends FutureTask<T> implements Comparable<ShardSchedulerV3.DispatchTask<T>> {
