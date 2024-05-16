@@ -45,6 +45,7 @@ import com.staros.proto.AddShardInfo;
 import com.staros.proto.AddShardRequest;
 import com.staros.proto.PlacementPolicy;
 import com.staros.proto.RemoveShardRequest;
+import com.staros.proto.WorkerInfo;
 import com.staros.schedule.select.FirstNSelector;
 import com.staros.schedule.select.Selector;
 import com.staros.service.ServiceManager;
@@ -380,7 +381,20 @@ public class ShardSchedulerV3 extends ShardSchedulerV2 {
                                 String.format("WorkerGroup %d doesn't exist!", ctx.getWorkerGroupId())));
                     } else {
                         Set<Long> wIds = new HashSet(wg.getAllWorkerIds(true));
-                        LOG.info("WorkerGroup get All worker ids: {}.", wIds);
+                        LOG.info("WorkerGroup get all worker " +
+                                        "serviceId: {}, " +
+                                        "workerIds: {}, " +
+                                        "workerGroupId: {}, " +
+                                        "allWorkerIds: {}.",
+                                shard.getServiceId(),
+                                wIds,
+                                ctx.getWorkerGroupId(),
+                                this.workerManager.getAllWorkerIds());
+                        for (Long wId : wIds) {
+                            WorkerInfo workerInfo = this.workerManager.getWorkerInfo(wId);
+                            LOG.info("Worker info: {}.", workerInfo);
+                        }
+
                         if (wIds.isEmpty()) {
                             ctx.done(new NoAliveWorkersException("WorkerGroup {} doesn't have alive workers",
                                     ctx.getWorkerGroupId()));
