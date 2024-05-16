@@ -169,6 +169,8 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
     }
 
     public ShardSchedulerV3(ServiceManager serviceManager, WorkerManager workerManager) {
+        METRIC_WORKER_SHARD_COUNT.remove("add");
+        METRIC_WORKER_SHARD_COUNT.remove("remove");
         this.addShardOpCounter = METRIC_WORKER_SHARD_COUNT.labelValues("add");
         this.removeShardOpCounter = METRIC_WORKER_SHARD_COUNT.labelValues("remove");
         this.serviceManager = serviceManager;
