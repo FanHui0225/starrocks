@@ -91,7 +91,7 @@ import java.util.stream.Stream;
 /**
  * Created by liujing on 2024/5/15.
  */
-public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
+public class ShardSchedulerV3 extends ShardSchedulerV2 {
 
     private static final Logger LOG = LogManager.getLogger(ShardSchedulerV3.class);
     private static final int PRIORITY_LOW = 0;
@@ -169,6 +169,7 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
     }
 
     public ShardSchedulerV3(ServiceManager serviceManager, WorkerManager workerManager) {
+        super(serviceManager, workerManager);
         this.addShardOpCounter = METRIC_WORKER_SHARD_COUNT.labelValues("add");
         this.removeShardOpCounter = METRIC_WORKER_SHARD_COUNT.labelValues("remove");
         this.serviceManager = serviceManager;
