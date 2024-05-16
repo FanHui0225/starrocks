@@ -380,6 +380,7 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
                                 String.format("WorkerGroup %d doesn't exist!", ctx.getWorkerGroupId())));
                     } else {
                         Set<Long> wIds = new HashSet(wg.getAllWorkerIds(true));
+                        LOG.info("WorkerGroup get All worker ids: {}.", wIds);
                         if (wIds.isEmpty()) {
                             ctx.done(new NoAliveWorkersException("WorkerGroup {} doesn't have alive workers",
                                     ctx.getWorkerGroupId()));
