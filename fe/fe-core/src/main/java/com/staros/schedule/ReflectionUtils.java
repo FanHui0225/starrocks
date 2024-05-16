@@ -42,11 +42,11 @@ import java.lang.reflect.Modifier;
  */
 public class ReflectionUtils {
 
-    public final static <R> R getFieldValue(String fieldName, Object v) throws IllegalAccessException {
+    public static final <R> R getFieldValue(String fieldName, Object v) throws IllegalAccessException {
         return getFieldValue(getDeclaredField(v, fieldName), v);
     }
 
-    public final static <R> R getFieldValue(Field field, Object object) throws IllegalAccessException {
+    public static final <R> R getFieldValue(Field field, Object object) throws IllegalAccessException {
         if (field != null) {
             field.setAccessible(true);
             return (R) field.get(object);
@@ -55,30 +55,30 @@ public class ReflectionUtils {
         }
     }
 
-    public final static void setFieldValue(Object object, String fieldName, Object value) throws IllegalAccessException {
+    public static final void setFieldValue(Object object, String fieldName, Object value) throws IllegalAccessException {
         setFieldValue(object, getDeclaredField(object, fieldName), value);
     }
 
-    public final static void setFieldValue(Object object, Field field, Object value) throws IllegalAccessException {
+    public static final void setFieldValue(Object object, Field field, Object value) throws IllegalAccessException {
         if (field != null) {
             field.setAccessible(true);
             field.set(object, value);
         }
     }
 
-    public final static Field getDeclaredField(Object v, String fieldName) {
+    public static final Field getDeclaredField(Object v, String fieldName) {
         return getDeclaredField(v.getClass(), fieldName);
     }
 
-    public final static Field getDeclaredField(Class<?> cls, String fieldName) {
+    public static final Field getDeclaredField(Class<?> cls, String fieldName) {
         return getDeclaredField(cls, fieldName, false);
     }
 
-    public final static Field getDeclaredStaticField(Class<?> cls, String fieldName) {
+    public static final Field getDeclaredStaticField(Class<?> cls, String fieldName) {
         return getDeclaredField(cls, fieldName, true);
     }
 
-    protected final static Field getDeclaredField(Class<?> cls, String fieldName, boolean isStatic) {
+    protected static final Field getDeclaredField(Class<?> cls, String fieldName, boolean isStatic) {
         Field field;
         Class<?> clazz = cls;
         for (; clazz != Object.class; clazz = clazz.getSuperclass()) {
@@ -88,8 +88,9 @@ public class ReflectionUtils {
                 if (isStatic) {
                     if (Modifier.isStatic(field.getModifiers())) {
                         return field;
-                    } else
+                    } else {
                         continue;
+                    }
                 } else {
                     return field;
                 }
