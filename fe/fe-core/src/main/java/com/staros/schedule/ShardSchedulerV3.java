@@ -169,8 +169,6 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
     }
 
     public ShardSchedulerV3(ServiceManager serviceManager, WorkerManager workerManager) {
-        METRIC_WORKER_SHARD_COUNT.remove("add");
-        METRIC_WORKER_SHARD_COUNT.remove("remove");
         this.addShardOpCounter = METRIC_WORKER_SHARD_COUNT.labelValues("add");
         this.removeShardOpCounter = METRIC_WORKER_SHARD_COUNT.labelValues("remove");
         this.serviceManager = serviceManager;
@@ -907,7 +905,7 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
 
     static {
         CONFLICT_POLICIES = Arrays.asList(PlacementPolicy.EXCLUDE, PlacementPolicy.PACK, PlacementPolicy.SPREAD);
-        METRIC_WORKER_SHARD_COUNT = MetricsSystem.registerCounter("starmgr_schedule_shard_ops",
+        METRIC_WORKER_SHARD_COUNT = MetricsSystem.registerCounter("starmgr_schedule_v3_shard_ops",
                 "count of operations by adding/remove shards to/from worker",
                 Lists.newArrayList("op"));
     }
