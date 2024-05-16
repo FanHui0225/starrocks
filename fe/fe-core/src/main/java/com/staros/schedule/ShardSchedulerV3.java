@@ -169,8 +169,8 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
     }
 
     public ShardSchedulerV3(ServiceManager serviceManager, WorkerManager workerManager) {
-        this.addShardOpCounter = METRIC_WORKER_SHARD_COUNT.labelValues(new String[]{"add"});
-        this.removeShardOpCounter = METRIC_WORKER_SHARD_COUNT.labelValues(new String[]{"remove"});
+        this.addShardOpCounter = METRIC_WORKER_SHARD_COUNT.labelValues("add");
+        this.removeShardOpCounter = METRIC_WORKER_SHARD_COUNT.labelValues("remove");
         this.serviceManager = serviceManager;
         this.workerManager = workerManager;
     }
@@ -314,7 +314,9 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
         this.submitDispatchTask(task, false);
     }
 
-    private <T extends Exception> void submitDispatchTask(ShardSchedulerV3.DispatchTask<T> task, boolean wait) throws StarException {
+    private <T extends Exception> void submitDispatchTask(
+            ShardSchedulerV3.DispatchTask<T> task,
+            boolean wait) throws StarException {
         try {
             this.dispatchExecutors.execute(task);
         } catch (Exception exception) {
@@ -408,7 +410,9 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
                                                 if (firstDegreeShard != null) {
                                                     Stream stream = firstDegreeShard.getReplicaWorkerIds().stream();
                                                     wIds.getClass();
-                                                    workerIds.addAll((Collection) stream.filter(wIds::contains).collect(Collectors.toList()));
+                                                    workerIds.addAll((Collection) stream.
+                                                            filter(wIds::contains)
+                                                            .collect(Collectors.toList()));
                                                 }
                                             }
                                         }
@@ -586,8 +590,12 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
                         shardManager.addShardReplicas(shardIds, workerId);
                     } else {
                         exception = new StarException(ExceptionCode.SCHEDULE,
-                                String.format("Schedule add shard task execution failed serviceId: %s, workerId: %d, shardIds: %s",
-                                        serviceId, workerId, shardIds));
+                                String.format("Schedule add shard task execution failed serviceId: %s," +
+                                                " workerId: %d," +
+                                                " shardIds: %s",
+                                        serviceId,
+                                        workerId,
+                                        shardIds));
                     }
                 }
 
@@ -898,7 +906,7 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
         CONFLICT_POLICIES = Arrays.asList(PlacementPolicy.EXCLUDE, PlacementPolicy.PACK, PlacementPolicy.SPREAD);
         METRIC_WORKER_SHARD_COUNT = MetricsSystem.registerCounter("starmgr_schedule_shard_ops",
                 "count of operations by adding/remove shards to/from worker",
-                Lists.newArrayList(new String[]{"op"}));
+                Lists.newArrayList("op"));
     }
 
     private static class DispatchTask<T> extends FutureTask<T> implements Comparable<ShardSchedulerV3.DispatchTask<T>> {
