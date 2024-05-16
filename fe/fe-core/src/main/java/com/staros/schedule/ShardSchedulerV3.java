@@ -59,10 +59,10 @@ import com.staros.util.Utils;
 import com.staros.worker.Worker;
 import com.staros.worker.WorkerGroup;
 import com.staros.worker.WorkerManager;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import io.prometheus.metrics.core.datapoints.CounterDataPoint;
 import io.prometheus.metrics.core.metrics.Counter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -99,10 +99,10 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
     private static final int PRIORITY_HIGH = 20;
     private static final int ADJUST_THREAD_INTERVAL_SECS = 300;
     private static final int INIT_CHECK_THREAD_DELAY_SECS = 30;
-    private static final int shortNap = 100;
+    private static final int SHORT_NAP = 100;
     private final ShardSchedulerV3.ExclusiveLocker requestLocker = new ShardSchedulerV3.ExclusiveLocker();
     private final Selector scoreSelector = new FirstNSelector();
-    private static final List<PlacementPolicy> conflictPolicies;
+    private static final List<PlacementPolicy> CONFLICT_POLICIES;
     private ScheduledThreadPoolExecutor calculateExecutors;
     private ThreadPoolExecutor dispatchExecutors;
     private ScheduledThreadPoolExecutor adjustPoolExecutors;
@@ -895,7 +895,7 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
     }
 
     static {
-        conflictPolicies = Arrays.asList(PlacementPolicy.EXCLUDE, PlacementPolicy.PACK, PlacementPolicy.SPREAD);
+        CONFLICT_POLICIES = Arrays.asList(PlacementPolicy.EXCLUDE, PlacementPolicy.PACK, PlacementPolicy.SPREAD);
         METRIC_WORKER_SHARD_COUNT = MetricsSystem.registerCounter("starmgr_schedule_shard_ops",
                 "count of operations by adding/remove shards to/from worker",
                 Lists.newArrayList(new String[]{"op"}));
@@ -998,7 +998,7 @@ public class ShardSchedulerV3 extends AbstractServer implements Scheduler {
                 Stream<Long> longStream = shard.getGroupIds().stream();
                 shardManager.getClass();
                 Set<Long> exclusiveIds = longStream.map(shardManager::getShardGroup).filter((y) -> {
-                    return y != null && ShardSchedulerV3.conflictPolicies.contains(y.getPlacementPolicy());
+                    return y != null && ShardSchedulerV3.CONFLICT_POLICIES.contains(y.getPlacementPolicy());
                 }).map(ShardGroup::getGroupId).collect(Collectors.toSet());
                 if (exclusiveIds.isEmpty()) {
                     return true;
