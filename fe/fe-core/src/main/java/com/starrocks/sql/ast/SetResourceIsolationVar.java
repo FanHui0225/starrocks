@@ -14,6 +14,7 @@
 
 package com.starrocks.sql.ast;
 
+import com.starrocks.lake.resource.ComputeNodeResourceIsolationMgr;
 import com.starrocks.sql.parser.NodePosition;
 
 import java.util.List;
@@ -23,8 +24,11 @@ import java.util.List;
  */
 public class SetResourceIsolationVar extends SetListItem {
 
-    private UserIdentity userIdent;
+    public static final byte READ = 0;
+    public static final byte WRITE = 1;
 
+    private byte type;
+    private UserIdentity userIdent;
     private List<String> hosts;
 
     public SetResourceIsolationVar(UserIdentity userIdent, List<String> hosts) {
@@ -32,9 +36,30 @@ public class SetResourceIsolationVar extends SetListItem {
     }
 
     public SetResourceIsolationVar(UserIdentity userIdent, List<String> hosts, NodePosition pos) {
+        this(READ, userIdent, hosts, pos);
+    }
+
+    public SetResourceIsolationVar(byte type, UserIdentity userIdent, List<String> hosts, NodePosition pos) {
         super(pos);
+        this.type = type;
         this.userIdent = userIdent;
         this.hosts = hosts;
+    }
+
+    public byte getType() {
+        return type;
+    }
+
+    public void setType(byte type) {
+        this.type = type;
+    }
+
+    public boolean isRead() {
+        return READ == type;
+    }
+
+    public boolean isWrite() {
+        return WRITE == type;
     }
 
     public UserIdentity getUserIdent() {

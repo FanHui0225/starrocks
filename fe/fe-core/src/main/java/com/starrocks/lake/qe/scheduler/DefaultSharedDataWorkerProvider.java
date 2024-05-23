@@ -101,7 +101,7 @@ public class DefaultSharedDataWorkerProvider implements WorkerProvider {
             UserIdentity user = ctx.getCurrentUserIdentity();
             Function<Long, Boolean> availableFilterFunc = GlobalStateMgr.getCurrentState()
                     .getComputeNodeResourceIsolationMgr()
-                    .getUserAvailableFilterFunc(user);
+                    .getUserReadAvailableFilterFunc(user);
 
             ImmutableMap.Builder<Long, ComputeNode> builder = new ImmutableMap.Builder<>();
             for (Map.Entry<Long, ComputeNode> entry : workers.entrySet()) {

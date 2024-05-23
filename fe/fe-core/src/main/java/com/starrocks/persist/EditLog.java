@@ -2222,9 +2222,7 @@ public class EditLog {
         logEdit(OperationType.OP_RECOVER_PARTITION_VERSION, info);
     }
 
-    public void logSetUserComputeNodeResource(UserIdentity user, List<Long> ids) {
-        UserComputeNodeResourceInfo userComputeNodeResourceInfo =
-                new UserComputeNodeResourceInfo(user.getUser(), new HashSet<>(ids));
-        logEdit(OperationType.OP_SET_CN_RESOURCE_ISOLATION, userComputeNodeResourceInfo);
+    public void logSetUserComputeNodeResource(UserComputeNodeResourceInfo info) {
+        logEdit(OperationType.OP_SET_CN_RESOURCE_ISOLATION, info);
     }
 }

@@ -1841,7 +1841,7 @@ setVar
         (COLLATE (collate = identifierOrString | DEFAULT))?                                     #setNames
     | PASSWORD '=' (string | PASSWORD '(' string ')')                                           #setPassword
     | PASSWORD FOR user '=' (string | PASSWORD '(' string ')')                                  #setPassword
-    | RESOURCE_ISOLATION FOR user '=' identifierOrStringList                                    #setResourceIsolation
+    | RESOURCE_ISOLATION FOR user '=' identifierOrStringList  TO (READ | WRITE)                 #setResourceIsolation
     | userVariable '=' expression                                                               #setUserVar
     | varType? identifier '=' setExprOrDefault                                                  #setSystemVar
     | systemVariable '=' setExprOrDefault                                                       #setSystemVar

@@ -103,16 +103,30 @@ public class SetExecutor {
             }
             UserIdentity currentUser = ctx.getCurrentUserIdentity();
             if (!currentUser.getUser().equals(AuthenticationMgr.ROOT_USER)) {
-                throw new DdlException("only allow set resource isolation for other user," +
+                throw new DdlException("only allow root user set resource isolation for other user," +
                         " current user: " + currentUser.getUser());
             }
-            LOG.info("Debug =================>> Set Resource Isolation Var Proposal Successful!, " +
-                            "user: {}, hosts: {}  <<=================",
+            if (setResourceIsolationVar.isWrite()
+                    && !userAuthenticationInfo.getUser().equals(AuthenticationMgr.ROOT_USER)) {
+                throw new DdlException("only allow set write resource isolation" +
+                        " for root user, current user: " + userAuthenticationInfo.getUser());
+            }
+
+            if (setResourceIsolationVar.isWrite()) {
+                GlobalStateMgr.getCurrentState()
+                        .getComputeNodeResourceIsolationMgr()
+                        .setRootComputeNodeWriteResource(setResourceIsolationVar.getHosts());
+            } else {
+                GlobalStateMgr.getCurrentState()
+                        .getComputeNodeResourceIsolationMgr()
+                        .setUserComputeNodeReadResource(userAuthenticationInfo, setResourceIsolationVar.getHosts());
+            }
+
+            LOG.info("=================>> Set Resource Isolation Var Proposal Successful!, " +
+                            "type: {}, user: {}, hosts: {}  <<=================",
+                    setResourceIsolationVar.getType(),
                     setResourceIsolationVar.getUserIdent().getUser(),
                     setResourceIsolationVar.getHosts());
-            GlobalStateMgr.getCurrentState()
-                    .getComputeNodeResourceIsolationMgr()
-                    .setUserComputeNodeResource(userAuthenticationInfo, setResourceIsolationVar.getHosts());
         }
     }
 

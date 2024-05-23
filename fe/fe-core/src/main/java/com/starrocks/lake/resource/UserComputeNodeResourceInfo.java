@@ -31,6 +31,8 @@ import java.util.Set;
 public class UserComputeNodeResourceInfo implements Writable, Serializable {
 
     @SerializedName(value = "resourceUser")
+    private byte resourceOperate;
+    @SerializedName(value = "resourceUser")
     private String resourceUser;
     @SerializedName(value = "computeNodeIds")
     private Set<Long> computeNodeIds;
@@ -38,7 +40,8 @@ public class UserComputeNodeResourceInfo implements Writable, Serializable {
     public UserComputeNodeResourceInfo() {
     }
 
-    public UserComputeNodeResourceInfo(String resourceUser, Set<Long> computeNodeIds) {
+    public UserComputeNodeResourceInfo(byte resourceOperate, String resourceUser, Set<Long> computeNodeIds) {
+        this.resourceOperate = resourceOperate;
         this.resourceUser = resourceUser;
         this.computeNodeIds = computeNodeIds;
     }
@@ -49,6 +52,10 @@ public class UserComputeNodeResourceInfo implements Writable, Serializable {
 
     public String getResourceUser() {
         return resourceUser;
+    }
+
+    public byte getResourceOperate() {
+        return resourceOperate;
     }
 
     @Override
@@ -62,10 +69,15 @@ public class UserComputeNodeResourceInfo implements Writable, Serializable {
         return GsonUtils.GSON.fromJson(json, UserComputeNodeResourceInfo.class);
     }
 
+    public static UserComputeNodeResourceInfo create(byte resourceOperate, String resourceUser, Set<Long> computeNodeIds) {
+        return new UserComputeNodeResourceInfo(resourceOperate, resourceUser, computeNodeIds);
+    }
+
     @Override
     public String toString() {
         return "UserComputeNodeResourceInfo{" +
-                "resourceUser='" + resourceUser + '\'' +
+                "resourceOperate=" + resourceOperate +
+                ", resourceUser='" + resourceUser + '\'' +
                 ", computeNodeIds=" + computeNodeIds +
                 '}';
     }

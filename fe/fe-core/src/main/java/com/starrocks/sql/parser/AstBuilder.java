@@ -3242,7 +3242,13 @@ public class AstBuilder extends StarRocksBaseVisitor<ParseNode> {
         for (StarRocksParser.IdentifierOrStringContext oneContext : context.identifierOrStringList().identifierOrString()) {
             hosts.add(((Identifier) visit(oneContext)).getValue());
         }
-        return new SetResourceIsolationVar(userIdentity, hosts, pos);
+        if (context.READ() != null) {
+            return new SetResourceIsolationVar(SetResourceIsolationVar.READ, userIdentity, hosts, pos);
+        } else if (context.WRITE() != null) {
+            return new SetResourceIsolationVar(SetResourceIsolationVar.WRITE, userIdentity, hosts, pos);
+        } else {
+            return new SetResourceIsolationVar(userIdentity, hosts, pos);
+        }
     }
 
     @Override
