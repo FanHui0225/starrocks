@@ -28,8 +28,6 @@ import com.starrocks.server.RunMode;
 import com.starrocks.sql.ast.SetResourceIsolationVar;
 import com.starrocks.sql.ast.UserIdentity;
 import com.starrocks.system.ComputeNode;
-import com.starrocks.warehouse.Cluster;
-import com.starrocks.warehouse.Warehouse;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
