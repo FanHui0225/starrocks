@@ -30,7 +30,7 @@ import java.util.Set;
  */
 public class UserComputeNodeResourceInfo implements Writable, Serializable {
 
-    @SerializedName(value = "resourceUser")
+    @SerializedName(value = "resourceOperate")
     private byte resourceOperate;
     @SerializedName(value = "resourceUser")
     private String resourceUser;
