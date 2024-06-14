@@ -380,6 +380,7 @@ public class ShardSchedulerV3 extends ShardSchedulerV2 {
                         ctx.done(new StarException(ExceptionCode.NOT_EXIST,
                                 String.format("WorkerGroup %d doesn't exist!", ctx.getWorkerGroupId())));
                     } else {
+                        //TODO 这里利用shard.getProperties(), 获取user write信息进行筛选worker.
                         Set<Long> wIds = new HashSet(wg.getAllWorkerIds(true));
                         LOG.info("WorkerGroup get all worker " +
                                         "serviceId: {}, " +
