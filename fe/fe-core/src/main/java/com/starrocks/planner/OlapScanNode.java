@@ -871,9 +871,13 @@ public class OlapScanNode extends ScanNode {
             msg.lake_scan_node.setSort_key_column_names(keyColumnNames);
             msg.lake_scan_node.setRollup_name(olapTable.getIndexNameById(selectedIndexId));
             if (!conjuncts.isEmpty()) {
-                LOG.info("OlapScanNode ->>>> conjuncts: {}", String.valueOf(conjuncts));
+                LOG.info("OlapScanNode ->>>> table: {}, conjuncts: {}",
+                        String.valueOf(this.olapTable.getName()),
+                        String.valueOf(conjuncts));
                 String explainString = getExplainString(conjuncts);
-                LOG.info("OlapScanNode ->>>> explainString: {}", String.valueOf(explainString));
+                LOG.info("OlapScanNode ->>>> table: {}, explainString: {}",
+                        String.valueOf(this.olapTable.getName()),
+                        String.valueOf(explainString));
                 msg.lake_scan_node.setSql_predicates(explainString);
             }
             if (null != sortColumn) {
