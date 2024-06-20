@@ -870,27 +870,25 @@ public class OlapScanNode extends ScanNode {
                     new TLakeScanNode(desc.getId().asInt(), keyColumnNames, keyColumnTypes, isPreAggregation);
             msg.lake_scan_node.setSort_key_column_names(keyColumnNames);
             msg.lake_scan_node.setRollup_name(olapTable.getIndexNameById(selectedIndexId));
-            String tbaleName = String.valueOf(this.olapTable.getName());
             if (!conjuncts.isEmpty()) {
                 LOG.info("OlapScanNode ->>>> table: {}, conjuncts: {}",
                         String.valueOf(this.olapTable.getName()),
                         String.valueOf(conjuncts));
+                for (int i = 0; i < conjuncts.size(); i++) {
+                    Expr expr = conjuncts.get(i);
+                    LOG.info("OlapScanNode ->>>> " +
+                                    "conjunct index: {}, " +
+                                    "conjunct class: {}, " +
+                                    "conjunct obj: {}.",
+                            i,
+                            expr != null ? expr.getClass().toString() : "null",
+                            String.valueOf(expr));
+                }
                 String explainString = getExplainString(conjuncts);
                 LOG.info("OlapScanNode ->>>> table: {}, explainString: {}",
                         String.valueOf(this.olapTable.getName()),
                         String.valueOf(explainString));
                 msg.lake_scan_node.setSql_predicates(explainString);
-            } else {
-                if ("lineitem".equals(tbaleName)) {
-                    LOG.info("OlapScanNode ->>>> table: {}, conjuncts: {}",
-                            String.valueOf(this.olapTable.getName()),
-                            String.valueOf(conjuncts));
-                    String explainString = "1: l_shipdate <= '1998-09-02'"; //getExplainString(conjuncts);
-                    LOG.info("OlapScanNode ->>>> table: {}, explainString: {}",
-                            String.valueOf(this.olapTable.getName()),
-                            String.valueOf(explainString));
-                    msg.lake_scan_node.setSql_predicates(explainString);
-                }
             }
             if (null != sortColumn) {
                 msg.lake_scan_node.setSort_column(sortColumn);
