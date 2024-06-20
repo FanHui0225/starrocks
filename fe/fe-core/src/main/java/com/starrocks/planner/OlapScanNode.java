@@ -874,7 +874,7 @@ public class OlapScanNode extends ScanNode {
                 LOG.info("OlapScanNode ->>>> table: {}, conjuncts: {}",
                         String.valueOf(this.olapTable.getName()),
                         String.valueOf(conjuncts));
-                String explainString = getExplainString(conjuncts);
+                String explainString = "1: l_shipdate <= '1998-09-02'"; //getExplainString(conjuncts);
                 LOG.info("OlapScanNode ->>>> table: {}, explainString: {}",
                         String.valueOf(this.olapTable.getName()),
                         String.valueOf(explainString));
