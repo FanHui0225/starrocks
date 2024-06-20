@@ -301,7 +301,7 @@ public class PlanFragmentBuilder {
         }
 
         List<Expr> outputExprs = outputColumns.stream().map(variable -> ScalarOperatorToExpr
-                        .buildExecExpression(variable, new ScalarOperatorToExpr.FormatterContext(execPlan.getColRefToExpr())))
+                .buildExecExpression(variable, new ScalarOperatorToExpr.FormatterContext(execPlan.getColRefToExpr())))
                 .collect(Collectors.toList());
         execPlan.getOutputExprs().addAll(outputExprs);
 
@@ -830,6 +830,7 @@ public class PlanFragmentBuilder {
                     new ScalarOperatorToExpr.FormatterContext(context.getColRefToExpr());
 
             for (ScalarOperator predicate : predicates) {
+                LOG.info("PlanFragmentBuilder ->>> predicate: {} ", predicate);
                 scanNode.getConjuncts().add(ScalarOperatorToExpr.buildExecExpression(predicate, formatterContext));
             }
 
@@ -2064,7 +2065,7 @@ public class PlanFragmentBuilder {
                         getShuffleColumns((HashDistributionSpec) distribution.getDistributionSpec());
                 List<Expr> distributeExpressions =
                         partitionColumns.stream().map(e -> ScalarOperatorToExpr.buildExecExpression(e,
-                                        new ScalarOperatorToExpr.FormatterContext(context.getColRefToExpr())))
+                                new ScalarOperatorToExpr.FormatterContext(context.getColRefToExpr())))
                                 .collect(Collectors.toList());
                 dataPartition = DataPartition.hashPartitioned(distributeExpressions);
             } else {
@@ -2368,7 +2369,7 @@ public class PlanFragmentBuilder {
         private List<Expr> getShuffleExprs(HashDistributionSpec hashDistributionSpec, ExecPlan context) {
             List<ColumnRefOperator> shuffleColumns = getShuffleColumns(hashDistributionSpec);
             return shuffleColumns.stream().map(e -> ScalarOperatorToExpr.buildExecExpression(e,
-                            new ScalarOperatorToExpr.FormatterContext(context.getColRefToExpr())))
+                    new ScalarOperatorToExpr.FormatterContext(context.getColRefToExpr())))
                     .collect(Collectors.toList());
         }
 
@@ -2583,7 +2584,7 @@ public class PlanFragmentBuilder {
 
             List<Expr> partitionExprs =
                     node.getPartitionExpressions().stream().map(e -> ScalarOperatorToExpr.buildExecExpression(e,
-                                    new ScalarOperatorToExpr.FormatterContext(context.getColRefToExpr())))
+                            new ScalarOperatorToExpr.FormatterContext(context.getColRefToExpr())))
                             .collect(Collectors.toList());
 
             List<OrderByElement> orderByElements = node.getOrderByElements().stream().map(e -> new OrderByElement(
@@ -3014,7 +3015,7 @@ public class PlanFragmentBuilder {
 
             List<Expr> eqJoinConjuncts =
                     eqOnPredicates.stream().map(e -> ScalarOperatorToExpr.buildExecExpression(e,
-                                    new ScalarOperatorToExpr.FormatterContext(context.getColRefToExpr())))
+                            new ScalarOperatorToExpr.FormatterContext(context.getColRefToExpr())))
                             .collect(Collectors.toList());
 
             for (Expr expr : eqJoinConjuncts) {
@@ -3026,12 +3027,12 @@ public class PlanFragmentBuilder {
             List<ScalarOperator> otherJoin = onPredicates;
             otherJoin.removeAll(eqOnPredicates);
             List<Expr> otherJoinConjuncts = otherJoin.stream().map(e -> ScalarOperatorToExpr.buildExecExpression(e,
-                            new ScalarOperatorToExpr.FormatterContext(context.getColRefToExpr())))
+                    new ScalarOperatorToExpr.FormatterContext(context.getColRefToExpr())))
                     .collect(Collectors.toList());
 
             List<ScalarOperator> predicates = Utils.extractConjuncts(predicate);
             List<Expr> conjuncts = predicates.stream().map(e -> ScalarOperatorToExpr.buildExecExpression(e,
-                            new ScalarOperatorToExpr.FormatterContext(context.getColRefToExpr())))
+                    new ScalarOperatorToExpr.FormatterContext(context.getColRefToExpr())))
                     .collect(Collectors.toList());
             ColumnRefSet requiredColsForFilter = new ColumnRefSet();
             otherJoin.stream().forEach(e -> requiredColsForFilter.union(e.getUsedColumns()));
