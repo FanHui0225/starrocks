@@ -15,13 +15,18 @@
 package com.starrocks.sql.optimizer.operator.scalar;
 
 import com.starrocks.sql.optimizer.operator.OperatorType;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+
 public class InPredicateOperator extends PredicateOperator {
+    private static final Logger LOG = LogManager.getLogger(InPredicateOperator.class);
+
     private final boolean isNotIn;
     private final boolean isSubquery;
 
@@ -29,24 +34,48 @@ public class InPredicateOperator extends PredicateOperator {
         super(OperatorType.IN, arguments);
         this.isNotIn = false;
         this.isSubquery = false;
+
+        StringBuilder builder = new StringBuilder();
+        for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
+            builder.append(ste + "\n");
+        }
+        LOG.info("InPredicateOperator(1) -> StackTrace: {}", builder.toString());
     }
 
     public InPredicateOperator(boolean isNotIn, ScalarOperator... arguments) {
         super(OperatorType.IN, arguments);
         this.isNotIn = isNotIn;
         this.isSubquery = false;
+
+        StringBuilder builder = new StringBuilder();
+        for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
+            builder.append(ste + "\n");
+        }
+        LOG.info("InPredicateOperator(2) -> StackTrace: {}", builder.toString());
     }
 
     public InPredicateOperator(boolean isNotIn, boolean isSubquery, ScalarOperator... arguments) {
         super(OperatorType.IN, arguments);
         this.isNotIn = isNotIn;
         this.isSubquery = isSubquery;
+
+        StringBuilder builder = new StringBuilder();
+        for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
+            builder.append(ste + "\n");
+        }
+        LOG.info("InPredicateOperator(3) -> StackTrace: {}", builder.toString());
     }
 
     public InPredicateOperator(boolean isNotIn, List<ScalarOperator> arguments) {
         super(OperatorType.IN, arguments);
         this.isNotIn = isNotIn;
         this.isSubquery = false;
+
+        StringBuilder builder = new StringBuilder();
+        for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
+            builder.append(ste + "\n");
+        }
+        LOG.info("InPredicateOperator(4) -> StackTrace: {}", builder.toString());
     }
 
     public boolean isSubquery() {
