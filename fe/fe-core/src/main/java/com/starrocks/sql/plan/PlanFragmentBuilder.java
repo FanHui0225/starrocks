@@ -746,6 +746,12 @@ public class PlanFragmentBuilder {
 
         @Override
         public PlanFragment visitPhysicalOlapScan(OptExpression optExpr, ExecPlan context) {
+            StringBuilder builder = new StringBuilder();
+            for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
+                builder.append(ste + "\n");
+            }
+            LOG.info("PlanFragmentBuilder -> StackTrace: {}", builder.toString());
+
             PhysicalOlapScanOperator node = (PhysicalOlapScanOperator) optExpr.getOp();
 
             OlapTable referenceTable = (OlapTable) node.getTable();
