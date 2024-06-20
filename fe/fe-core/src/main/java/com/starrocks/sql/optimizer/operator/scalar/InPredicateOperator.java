@@ -40,7 +40,7 @@ public class InPredicateOperator extends PredicateOperator {
         for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
             builder.append(ste + "\n");
         }
-        LOG.info("InPredicateOperator(1) -> StackTrace: {}, " +
+        LOG.info("InPredicateOperator(2) -> StackTrace: {}, " +
                         "arguments: {}",
                 builder.toString(), arguments.length >
                         0 ? Arrays.toString(arguments) : "null");
@@ -55,7 +55,7 @@ public class InPredicateOperator extends PredicateOperator {
         for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
             builder.append(ste + "\n");
         }
-        LOG.info("InPredicateOperator(1) -> StackTrace: {}, " +
+        LOG.info("InPredicateOperator(3) -> StackTrace: {}, " +
                         "arguments: {}",
                 builder.toString(), arguments.length >
                         0 ? Arrays.toString(arguments) : "null");
@@ -70,7 +70,7 @@ public class InPredicateOperator extends PredicateOperator {
         for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
             builder.append(ste + "\n");
         }
-        LOG.info("InPredicateOperator(1) -> StackTrace: {}, " +
+        LOG.info("InPredicateOperator(4) -> StackTrace: {}, " +
                 "arguments: {}",
                 builder.toString(), arguments.length >
                         0 ? Arrays.toString(arguments) : "null");
