@@ -494,6 +494,7 @@ public class RelationTransformer extends AstVisitor<LogicalPlan, ExpressionMappi
 
     @Override
     public LogicalPlan visitTable(TableRelation node, ExpressionMapping context) {
+        //TODO   test ->>>>>>>>>>>>
         ImmutableMap.Builder<ColumnRefOperator, Column> colRefToColumnMetaMapBuilder = ImmutableMap.builder();
         ImmutableMap.Builder<Column, ColumnRefOperator> columnMetaToColRefMapBuilder = ImmutableMap.builder();
         ImmutableList.Builder<ColumnRefOperator> outputVariablesBuilder = ImmutableList.builder();
