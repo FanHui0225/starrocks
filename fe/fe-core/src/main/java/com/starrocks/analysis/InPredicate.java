@@ -64,7 +64,6 @@ public class InPredicate extends Predicate {
     // should check membership in the inList (the remaining children).
     public InPredicate(Expr compareExpr, List<Expr> inList, boolean isNotIn) {
         this(compareExpr, inList, isNotIn, NodePosition.ZERO);
-
         StringBuilder builder = new StringBuilder();
         for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
             builder.append(ste + "\n");
@@ -74,6 +73,7 @@ public class InPredicate extends Predicate {
                         "inList: {}, " +
                         "isNotIn: {}, " +
                         "compareExpr class: {} ",
+                builder.toString(),
                 String.valueOf(compareExpr),
                 inList,
                 isNotIn,
@@ -99,6 +99,7 @@ public class InPredicate extends Predicate {
                         "inList: {}, " +
                         "isNotIn: {}, " +
                         "compareExpr class: {} ",
+                builder.toString(),
                 String.valueOf(compareExpr),
                 inList,
                 isNotIn,
