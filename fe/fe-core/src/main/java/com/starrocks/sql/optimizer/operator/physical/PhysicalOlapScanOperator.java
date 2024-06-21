@@ -30,6 +30,8 @@ import com.starrocks.sql.optimizer.operator.logical.LogicalOlapScanOperator;
 import com.starrocks.sql.optimizer.operator.scalar.ColumnRefOperator;
 import com.starrocks.sql.optimizer.operator.scalar.ScalarOperator;
 import com.starrocks.sql.optimizer.statistics.ColumnDict;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
 import java.util.List;
@@ -38,6 +40,8 @@ import java.util.Objects;
 import java.util.Set;
 
 public class PhysicalOlapScanOperator extends PhysicalScanOperator {
+    private static final Logger LOG = LogManager.getLogger(PhysicalOlapScanOperator.class);
+
     private final DistributionSpec distributionSpec;
     private final long selectedIndexId;
     private final List<Long> selectedTabletId;
@@ -77,6 +81,12 @@ public class PhysicalOlapScanOperator extends PhysicalScanOperator {
         this.hintsReplicaId = hintsReplicaId;
         this.prunedPartitionPredicates = prunedPartitionPredicates;
         this.usePkIndex = usePkIndex;
+
+        StringBuilder builder = new StringBuilder();
+        for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
+            builder.append(ste + "\n");
+        }
+        LOG.info("PhysicalOlapScanOperator 1111111111 -> StackTrace: {}", builder.toString());
     }
 
     public PhysicalOlapScanOperator(LogicalOlapScanOperator scanOperator) {
@@ -88,6 +98,12 @@ public class PhysicalOlapScanOperator extends PhysicalScanOperator {
         this.hintsReplicaId = scanOperator.getHintsReplicaIds();
         this.prunedPartitionPredicates = scanOperator.getPrunedPartitionPredicates();
         this.usePkIndex = scanOperator.isUsePkIndex();
+
+        StringBuilder builder = new StringBuilder();
+        for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
+            builder.append(ste + "\n");
+        }
+        LOG.info("PhysicalOlapScanOperator 2222222222 -> StackTrace: {}", builder.toString());
     }
 
     public long getSelectedIndexId() {
