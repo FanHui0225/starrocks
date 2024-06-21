@@ -40,10 +40,16 @@ public class InPredicateOperator extends PredicateOperator {
         for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
             builder.append(ste + "\n");
         }
-        LOG.info("InPredicateOperator(2) -> StackTrace: {}, " +
+        LOG.info("InPredicateOperator(1) -> StackTrace: {}, " +
                         "arguments: {}",
                 builder.toString(), arguments.length >
                         0 ? Arrays.toString(arguments) : "null");
+        if (arguments != null && arguments.length > 0) {
+            for (int i = 0; i < arguments.length; i++) {
+                LOG.info("InPredicateOperator(1) -> " +
+                        "argument class: {}", String.valueOf(arguments[i].getClass()));
+            }
+        }
     }
 
     public InPredicateOperator(boolean isNotIn, ScalarOperator... arguments) {
@@ -55,10 +61,17 @@ public class InPredicateOperator extends PredicateOperator {
         for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
             builder.append(ste + "\n");
         }
-        LOG.info("InPredicateOperator(3) -> StackTrace: {}, " +
+        LOG.info("InPredicateOperator(2) -> StackTrace: {}, " +
                         "arguments: {}",
                 builder.toString(), arguments.length >
                         0 ? Arrays.toString(arguments) : "null");
+
+        if (arguments != null && arguments.length > 0) {
+            for (int i = 0; i < arguments.length; i++) {
+                LOG.info("InPredicateOperator(2) -> " +
+                        "argument class: {}", String.valueOf(arguments[i].getClass()));
+            }
+        }
     }
 
     public InPredicateOperator(boolean isNotIn, boolean isSubquery, ScalarOperator... arguments) {
@@ -70,10 +83,17 @@ public class InPredicateOperator extends PredicateOperator {
         for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
             builder.append(ste + "\n");
         }
-        LOG.info("InPredicateOperator(4) -> StackTrace: {}, " +
-                "arguments: {}",
+        LOG.info("InPredicateOperator(3) -> StackTrace: {}, " +
+                        "arguments: {}",
                 builder.toString(), arguments.length >
                         0 ? Arrays.toString(arguments) : "null");
+
+        if (arguments != null && arguments.length > 0) {
+            for (int i = 0; i < arguments.length; i++) {
+                LOG.info("InPredicateOperator(3) -> " +
+                        "argument class: {}", String.valueOf(arguments[i].getClass()));
+            }
+        }
     }
 
     public InPredicateOperator(boolean isNotIn, List<ScalarOperator> arguments) {
@@ -85,8 +105,16 @@ public class InPredicateOperator extends PredicateOperator {
         for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
             builder.append(ste + "\n");
         }
-        LOG.info("InPredicateOperator(1) -> StackTrace: {}, " +
+        LOG.info("InPredicateOperator(4) -> StackTrace: {}, " +
                 "arguments: {}", builder.toString(), String.valueOf(arguments));
+
+        if (arguments != null && arguments.size() > 0) {
+            for (int i = 0; i < arguments.size(); i++) {
+                LOG.info("InPredicateOperator(4) -> " +
+                        "argument class: {}", String.valueOf(arguments.get(i).getClass()));
+            }
+        }
+
     }
 
     public boolean isSubquery() {
