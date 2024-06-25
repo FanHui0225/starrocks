@@ -501,6 +501,7 @@ public class RelationTransformer extends AstVisitor<LogicalPlan, ExpressionMappi
 
         int relationId = columnRefFactory.getNextRelationId();
         for (Map.Entry<Field, Column> column : node.getColumns().entrySet()) {
+            LOG.info("visitTable -> column tpye: {}, column: {}", column.getKey(), column.getValue());
             ColumnRefOperator columnRef = columnRefFactory.create(column.getKey().getName(),
                     column.getKey().getType(),
                     column.getValue().isAllowNull());
@@ -803,8 +804,8 @@ public class RelationTransformer extends AstVisitor<LogicalPlan, ExpressionMappi
                 node.getLeft().getRelationFields().joinWith(node.getRight().getRelationFields()));
         joinScope.setParent(node.getScope().getParent());
         ExpressionMapping expressionMapping = new ExpressionMapping(joinScope, Streams.concat(
-                        leftOpt.getFieldMappings().stream(),
-                        rightOpt.getFieldMappings().stream())
+                leftOpt.getFieldMappings().stream(),
+                rightOpt.getFieldMappings().stream())
                 .collect(Collectors.toList()));
 
         ScalarOperator onPredicate = null;
@@ -842,8 +843,8 @@ public class RelationTransformer extends AstVisitor<LogicalPlan, ExpressionMappi
                     Lists.newArrayList(rightOpt.getFieldMappings()));
         } else {
             outputExpressionMapping = new ExpressionMapping(node.getScope(), Streams.concat(
-                            leftOpt.getFieldMappings().stream(),
-                            rightOpt.getFieldMappings().stream())
+                    leftOpt.getFieldMappings().stream(),
+                    rightOpt.getFieldMappings().stream())
                     .collect(Collectors.toList()));
         }
 
@@ -1059,7 +1060,7 @@ public class RelationTransformer extends AstVisitor<LogicalPlan, ExpressionMappi
         final boolean usingLeftRelation;
 
         List<SlotRef> slotRefs = Lists.newArrayList();
-        Expr predicate  = predicateWithSubquery.get(0);
+        Expr predicate = predicateWithSubquery.get(0);
         predicate.collect(SlotRef.class, slotRefs);
         RelationFields leftRelationFields = node.getLeft().getRelationFields();
         RelationFields rightRelationFields = node.getRight().getRelationFields();
