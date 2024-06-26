@@ -28,15 +28,12 @@ import com.starrocks.sql.optimizer.operator.OperatorType;
 import com.starrocks.sql.optimizer.operator.OperatorVisitor;
 import com.starrocks.sql.optimizer.operator.scalar.ColumnRefOperator;
 import com.starrocks.sql.optimizer.operator.scalar.ScalarOperator;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 public final class LogicalOlapScanOperator extends LogicalScanOperator {
-    private static final Logger LOG = LogManager.getLogger(LogicalOlapScanOperator.class);
 
     private DistributionSpec distributionSpec;
     private long selectedIndexId;
@@ -61,7 +58,6 @@ public final class LogicalOlapScanOperator extends LogicalScanOperator {
         for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
             builder.append(ste + "\n");
         }
-        LOG.info("LogicalOlapScanOperator 1111111111 -> StackTrace: {}", builder.toString());
     }
 
     public LogicalOlapScanOperator(
@@ -80,12 +76,6 @@ public final class LogicalOlapScanOperator extends LogicalScanOperator {
                 Lists.newArrayList(),
                 Lists.newArrayList(),
                 false);
-
-        StringBuilder builder = new StringBuilder();
-        for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
-            builder.append(ste + "\n");
-        }
-        LOG.info("LogicalOlapScanOperator 222222222 -> StackTrace: {}", builder.toString());
     }
 
     public LogicalOlapScanOperator(
@@ -117,24 +107,11 @@ public final class LogicalOlapScanOperator extends LogicalScanOperator {
         this.hintsReplicaIds = hintsReplicaIds;
         this.prunedPartitionPredicates = Lists.newArrayList();
         this.usePkIndex = usePkIndex;
-
-
-        StringBuilder builder = new StringBuilder();
-        for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
-            builder.append(ste + "\n");
-        }
-        LOG.info("LogicalOlapScanOperator 333333333 -> StackTrace: {}", builder.toString());
     }
 
     private LogicalOlapScanOperator() {
         super(OperatorType.LOGICAL_OLAP_SCAN);
         this.prunedPartitionPredicates = ImmutableList.of();
-
-        StringBuilder builder = new StringBuilder();
-        for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
-            builder.append(ste + "\n");
-        }
-        LOG.info("LogicalOlapScanOperator 444444444 -> StackTrace: {}", builder.toString());
     }
 
     public DistributionSpec getDistributionSpec() {
