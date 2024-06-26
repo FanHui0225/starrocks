@@ -91,6 +91,8 @@ public class Utils {
         if (null == root) {
             return list;
         }
+
+        LOG.info("extractConjuncts ->  {}, {}", root, root != null ? root.getClass() : "null");
         extractConjunctsImpl(root, list);
         return list;
     }
@@ -115,6 +117,13 @@ public class Utils {
             result.add(root);
             return;
         }
+
+        LOG.info("extractConjunctsImpl ->  root: {}, result: {}", root, result);
+        LOG.info("extractConjunctsImpl ->  root class: {}, result class: {}",
+                root != null ? root.getClass() : "null",
+                result != null ?
+                        result.stream().map(r -> r.getClass().toString()).collect(Collectors.toList())
+                        : " null");
         extractConjunctsImpl(cpo.getChild(0), result);
         extractConjunctsImpl(cpo.getChild(1), result);
     }
@@ -725,7 +734,7 @@ public class Utils {
                 }
                 if (FunctionSet.GROUP_CONCAT.equalsIgnoreCase(fnName) || FunctionSet.AVG.equalsIgnoreCase(fnName)) {
                     return true;
-                } else if (FunctionSet.ARRAY_AGG.equalsIgnoreCase(fnName))  {
+                } else if (FunctionSet.ARRAY_AGG.equalsIgnoreCase(fnName)) {
                     if (children.size() > 1 || children.get(0).getType().isDecimalOfAnyVersion()) {
                         return true;
                     }
