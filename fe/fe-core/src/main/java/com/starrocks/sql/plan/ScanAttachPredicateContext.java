@@ -96,9 +96,20 @@ public final class ScanAttachPredicateContext {
                             " columnMappings[{}]: {}",
                     i, this.fieldMappings[i],
                     i, columnMappings[i]);
+            if (this.fieldMappings[i].getName().equals(this.attachCompareExpr.getColumnName())) {
+                this.relationFieldIndex = i;
+                LOG.info("prepare -> " +
+                        "relationFieldIndex: {}", this.relationFieldIndex);
+            }
         }
-        ResolvedField resolvedField = scope.resolveField(this.attachCompareExpr);
-        this.relationFieldIndex = resolvedField.getRelationFieldIndex();
+        ResolvedField resolvedField;
+        try {
+            resolvedField = scope.resolveField(this.attachCompareExpr);
+            this.relationFieldIndex = resolvedField.getRelationFieldIndex();
+        } catch (Exception exception) {
+            resolvedField = null;
+            LOG.error("prepare -> resolveField ", exception);
+        }
         LOG.info("prepare -> resolvedField: {}", resolvedField);
         LOG.info("prepare -> Field: {}", resolvedField != null ? resolvedField.getField() : null);
         LOG.info("prepare -> RelationFieldIndex: {}", resolvedField != null ? resolvedField.getRelationFieldIndex() : -1);
