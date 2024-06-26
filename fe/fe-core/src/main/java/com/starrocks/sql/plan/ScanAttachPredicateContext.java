@@ -26,7 +26,7 @@ import java.util.List;
 public final class ScanAttachPredicateContext {
 
     private static final ThreadLocal<ScanAttachPredicateContext>
-            scanAttachPredicateContext = new ThreadLocal<>();
+            SCAN_ATTACH_PREDICATE_CONTEXT = new ThreadLocal<>();
 
     private OperatorType opType;
     private SlotRef attachCompareExpr;
@@ -41,21 +41,21 @@ public final class ScanAttachPredicateContext {
     }
 
     public static void beginInPredicate(SlotRef attachCompareExpr, List<LiteralExpr> attachValueExprs) {
-        ScanAttachPredicateContext context = scanAttachPredicateContext.get();
+        ScanAttachPredicateContext context = SCAN_ATTACH_PREDICATE_CONTEXT.get();
         if (context == null) {
             context = new ScanAttachPredicateContext(OperatorType.IN);
-            scanAttachPredicateContext.set(context);
+            SCAN_ATTACH_PREDICATE_CONTEXT.set(context);
         }
         context.attachCompareExpr = attachCompareExpr;
         context.attachValueExprs = attachValueExprs;
     }
 
     public static void endInPredicate() {
-        ScanAttachPredicateContext context = (ScanAttachPredicateContext) scanAttachPredicateContext.get();
+        ScanAttachPredicateContext context = (ScanAttachPredicateContext) SCAN_ATTACH_PREDICATE_CONTEXT.get();
         if (context != null) {
             context.attachCompareExpr = null;
             context.attachValueExprs = null;
-            scanAttachPredicateContext.set(null);
+            SCAN_ATTACH_PREDICATE_CONTEXT.set(null);
         }
     }
 }
