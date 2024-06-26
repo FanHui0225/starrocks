@@ -801,7 +801,7 @@ public final class SqlToScalarOperatorTranslator {
 
                 subqueryOutput = new CallOperator(FunctionSet.IFNULL, Type.BIGINT,
                         Lists.newArrayList(subqueryOutput, ConstantOperator.createBigint(0)),
-                        Expr.getBuiltinFunction(FunctionSet.IFNULL, new Type[]{Type.BIGINT, Type.BIGINT},
+                        Expr.getBuiltinFunction(FunctionSet.IFNULL, new Type[] {Type.BIGINT, Type.BIGINT},
                                 Function.CompareMode.IS_IDENTICAL));
             }
 

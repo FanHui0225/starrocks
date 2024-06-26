@@ -15,10 +15,7 @@
 package com.starrocks.sql.optimizer.operator.scalar;
 
 import com.starrocks.sql.optimizer.operator.OperatorType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
