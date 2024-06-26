@@ -813,8 +813,20 @@ public class PlanFragmentBuilder {
                         "Build Exec OlapScanNode fail, scan info is invalid", INTERNAL_ERROR, e);
             }
 
+            Map<ColumnRefOperator, Column> colRefToColumnMetaMap;
+            if (ScanAttachPredicateContext.isScanAttachPredicateTable(node.getTable().getName())) {
+                ScanAttachPredicateContext scanAttachPredicateContext = ScanAttachPredicateContext.getContext();
+                colRefToColumnMetaMap = new HashMap<>(node.getColRefToColumnMetaMap());
+                ColumnRefOperator columnRefOperator = scanAttachPredicateContext.getAttachColumnRefOperator();
+                if (!colRefToColumnMetaMap.containsKey(columnRefOperator)) {
+                    colRefToColumnMetaMap.put(columnRefOperator, scanAttachPredicateContext.getAttachColumn());
+                }
+            } else {
+                colRefToColumnMetaMap = node.getColRefToColumnMetaMap();
+            }
+
             // set slot
-            for (Map.Entry<ColumnRefOperator, Column> entry : node.getColRefToColumnMetaMap().entrySet()) {
+            for (Map.Entry<ColumnRefOperator, Column> entry : colRefToColumnMetaMap.entrySet()) {
                 SlotDescriptor slotDescriptor =
                         context.getDescTbl().addSlotDescriptor(tupleDescriptor, new SlotId(entry.getKey().getId()));
                 slotDescriptor.setColumn(entry.getValue());
@@ -861,7 +873,7 @@ public class PlanFragmentBuilder {
 
             tupleDescriptor.computeMemLayout();
 
-            // set unused output columns 
+            // set unused output columns
             setUnUsedOutputColumns(node, scanNode, predicates, referenceTable);
 
             // set isPreAggregation

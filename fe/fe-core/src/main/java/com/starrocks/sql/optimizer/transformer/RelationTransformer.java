@@ -522,7 +522,10 @@ public class RelationTransformer extends AstVisitor<LogicalPlan, ExpressionMappi
                     new ExpressionMapping(node.getScope(), outputVariables), columnRefFactory);
         }
         if (ScanAttachPredicateContext.isScanAttachPredicateTable(node.getTable().getName())) {
-            ScanAttachPredicateContext.getContext().prepare(node.getScope(), outputVariables);
+            ScanAttachPredicateContext.getContext().prepare(
+                    node.getScope(),
+                    outputVariables,
+                    columnMetaToColRefMap);
         }
 
         LogicalScanOperator scanOperator;

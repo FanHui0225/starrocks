@@ -19,6 +19,7 @@ import com.starrocks.analysis.LiteralExpr;
 import com.starrocks.analysis.NullLiteral;
 import com.starrocks.analysis.SlotRef;
 import com.starrocks.analysis.TableName;
+import com.starrocks.catalog.Column;
 import com.starrocks.sql.analyzer.ResolvedField;
 import com.starrocks.sql.analyzer.Scope;
 import com.starrocks.sql.optimizer.operator.OperatorType;
@@ -29,7 +30,10 @@ import com.starrocks.sql.optimizer.operator.scalar.ScalarOperator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by liujing on 2024/6/25.
@@ -46,16 +50,11 @@ public final class ScanAttachPredicateContext {
     private SlotRef attachCompareExpr;
     private LiteralExpr[] attachValueExprs;
 
-    private Scope scope;
+    private int relationFieldIndex;
     private ColumnRefOperator[] fieldMappings;
-    private ScalarOperator attachPredicate;
+    private Column[] columnMappings;
+    ScalarOperator[] scalarOperators;
 
-    public class ScanAttachPredicate {
-
-        public ScalarOperator getOperator() {
-            return null;
-        }
-    }
 
     private ScanAttachPredicateContext(OperatorType opType) {
         this.opType = opType;
@@ -79,29 +78,48 @@ public final class ScanAttachPredicateContext {
         return SCAN_ATTACH_PREDICATE_CONTEXT.get();
     }
 
-    public void prepare(Scope scope, List<ColumnRefOperator> fieldMappings) {
-        this.scope = scope;
+    public void prepare(Scope scope,
+                        List<ColumnRefOperator> fieldMappings,
+                        Map<Column, ColumnRefOperator> columnMetaToColRefMap) {
         this.fieldMappings = new ColumnRefOperator[fieldMappings.size()];
+        this.columnMappings = new Column[fieldMappings.size()];
         fieldMappings.toArray(this.fieldMappings);
-        LOG.info("prepare -> scope: {} ", scope);
+        Map<ColumnRefOperator, Column> colRefToColumnMetaMap =
+                columnMetaToColRefMap
+                        .entrySet()
+                        .stream()
+                        .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
         for (int i = 0; i < this.fieldMappings.length; i++) {
-            LOG.info("prepare -> fieldMappings[{}]: {}", i, this.fieldMappings[i]);
+            columnMappings[i] = colRefToColumnMetaMap.get(this.fieldMappings[i]);
+            LOG.info("prepare -> " +
+                            "fieldMappings[{}]: {}," +
+                            " columnMappings[{}]: {}",
+                    i, this.fieldMappings[i],
+                    i, columnMappings[i]);
         }
         ResolvedField resolvedField = scope.resolveField(this.attachCompareExpr);
+        this.relationFieldIndex = resolvedField.getRelationFieldIndex();
         LOG.info("prepare -> resolvedField: {}", resolvedField);
         LOG.info("prepare -> Field: {}", resolvedField != null ? resolvedField.getField() : null);
         LOG.info("prepare -> RelationFieldIndex: {}", resolvedField != null ? resolvedField.getRelationFieldIndex() : -1);
-        ScalarOperator[] scalarOperators = new ScalarOperator[attachValueExprs.length + 1];
+        this.scalarOperators = new ScalarOperator[attachValueExprs.length + 1];
         scalarOperators[0] = this.fieldMappings[resolvedField.getRelationFieldIndex()];
         for (int i = 0; i < attachValueExprs.length; i++) {
             scalarOperators[i + 1] = visitLiteral(attachValueExprs[i]);
         }
-        this.attachPredicate = new InPredicateOperator(false, scalarOperators);
-        LOG.info("prepare -> attachPredicate: {}", attachPredicate);
+        LOG.info("prepare -> scalarOperators: {}", scalarOperators != null ? Arrays.toString(scalarOperators) : null);
+    }
+
+    public Column getAttachColumn() {
+        return this.columnMappings[this.relationFieldIndex];
+    }
+
+    public ColumnRefOperator getAttachColumnRefOperator() {
+        return this.fieldMappings[this.relationFieldIndex];
     }
 
     public ScalarOperator getAttachPredicate() {
-        return attachPredicate;
+        return new InPredicateOperator(false, scalarOperators);
     }
 
     protected ScalarOperator visitLiteral(LiteralExpr node) {
@@ -126,7 +144,7 @@ public final class ScanAttachPredicateContext {
     }
 
     public static void endInPredicate() {
-        ScanAttachPredicateContext context = (ScanAttachPredicateContext) SCAN_ATTACH_PREDICATE_CONTEXT.get();
+        ScanAttachPredicateContext context = SCAN_ATTACH_PREDICATE_CONTEXT.get();
         if (context != null) {
             context.attachCompareExpr = null;
             context.attachValueExprs = null;
