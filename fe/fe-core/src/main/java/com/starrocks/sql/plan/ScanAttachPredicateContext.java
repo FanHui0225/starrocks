@@ -16,12 +16,15 @@ package com.starrocks.sql.plan;
 
 import com.google.common.base.Preconditions;
 import com.starrocks.analysis.LiteralExpr;
+import com.starrocks.analysis.NullLiteral;
 import com.starrocks.analysis.SlotRef;
 import com.starrocks.analysis.TableName;
 import com.starrocks.sql.analyzer.ResolvedField;
 import com.starrocks.sql.analyzer.Scope;
 import com.starrocks.sql.optimizer.operator.OperatorType;
 import com.starrocks.sql.optimizer.operator.scalar.ColumnRefOperator;
+import com.starrocks.sql.optimizer.operator.scalar.ConstantOperator;
+import com.starrocks.sql.optimizer.operator.scalar.InPredicateOperator;
 import com.starrocks.sql.optimizer.operator.scalar.ScalarOperator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,10 +44,11 @@ public final class ScanAttachPredicateContext {
     private OperatorType opType;
     private String attachTargetTablePrefix;
     private SlotRef attachCompareExpr;
-    private List<LiteralExpr> attachValueExprs;
+    private LiteralExpr[] attachValueExprs;
 
     private Scope scope;
     private ColumnRefOperator[] fieldMappings;
+    private ScalarOperator attachPredicate;
 
     public class ScanAttachPredicate {
 
@@ -60,7 +64,6 @@ public final class ScanAttachPredicateContext {
     public OperatorType getOpType() {
         return opType;
     }
-
 
     public static boolean isScanAttachPredicateTable(String tableName) {
         ScanAttachPredicateContext context = getContext();
@@ -88,6 +91,24 @@ public final class ScanAttachPredicateContext {
         LOG.info("prepare -> resolvedField: {}", resolvedField);
         LOG.info("prepare -> Field: {}", resolvedField != null ? resolvedField.getField() : null);
         LOG.info("prepare -> RelationFieldIndex: {}", resolvedField != null ? resolvedField.getRelationFieldIndex() : -1);
+        ScalarOperator[] scalarOperators = new ScalarOperator[attachValueExprs.length + 1];
+        scalarOperators[0] = this.fieldMappings[resolvedField.getRelationFieldIndex()];
+        for (int i = 0; i < attachValueExprs.length; i++) {
+            scalarOperators[i + 1] = visitLiteral(attachValueExprs[i]);
+        }
+        this.attachPredicate = new InPredicateOperator(false, scalarOperators);
+        LOG.info("prepare -> attachPredicate: {}", attachPredicate);
+    }
+
+    public ScalarOperator getAttachPredicate() {
+        return attachPredicate;
+    }
+
+    protected ScalarOperator visitLiteral(LiteralExpr node) {
+        if (node instanceof NullLiteral) {
+            return ConstantOperator.createNull(node.getType());
+        }
+        return ConstantOperator.createObject(node.getRealObjectValue(), node.getType());
     }
 
     public static void beginInPredicate(SlotRef attachCompareExpr, List<LiteralExpr> attachValueExprs) {
@@ -97,7 +118,8 @@ public final class ScanAttachPredicateContext {
             SCAN_ATTACH_PREDICATE_CONTEXT.set(context);
         }
         context.attachCompareExpr = attachCompareExpr;
-        context.attachValueExprs = attachValueExprs;
+        context.attachValueExprs = new LiteralExpr[attachValueExprs.size()];
+        attachValueExprs.toArray(context.attachValueExprs);
         TableName tableName;
         Preconditions.checkNotNull(tableName = attachCompareExpr.getTblNameWithoutAnalyzed());
         context.attachTargetTablePrefix = tableName.getTbl();

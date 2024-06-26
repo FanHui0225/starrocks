@@ -841,6 +841,9 @@ public class PlanFragmentBuilder {
                     new ScalarOperatorToExpr.FormatterContext(context.getColRefToExpr());
 
             List<ScalarOperator> predicates = new ArrayList<>();
+            if (ScanAttachPredicateContext.isScanAttachPredicateTable(node.getTable().getName())) {
+                predicates.add(ScanAttachPredicateContext.getContext().getAttachPredicate());
+            }
             predicates.addAll(originPredicates);
 
             LOG.info("PlanFragmentBuilder ->>> predicates: {} ", predicates);
