@@ -830,7 +830,10 @@ public class PlanFragmentBuilder {
             // set column access path
             scanNode.setColumnAccessPaths(computeAllColumnAccessPath(node, context));
 
-            LOG.info("PlanFragmentBuilder -> predicate:{} , class: {}", node.getPredicate(), node.getPredicate().getClass());
+            LOG.info("PlanFragmentBuilder -> table: {}, predicate:{} , class: {}",
+                    node.getTable() != null ? node.getTable().getName() : "null",
+                    node.getPredicate(),
+                    node.getPredicate().getClass());
 
             // set predicate
             List<ScalarOperator> predicates = Utils.extractConjuncts(node.getPredicate());
