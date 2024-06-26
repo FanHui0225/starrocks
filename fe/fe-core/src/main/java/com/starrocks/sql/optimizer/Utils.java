@@ -92,7 +92,6 @@ public class Utils {
             return list;
         }
 
-        LOG.info("extractConjuncts ->  {}, {}", root, root != null ? root.getClass() : "null");
         extractConjunctsImpl(root, list);
         return list;
     }
@@ -109,24 +108,12 @@ public class Utils {
     private static void extractConjunctsImpl(ScalarOperator root, Collection<ScalarOperator> result) {
         if (!OperatorType.COMPOUND.equals(root.getOpType())) {
             result.add(root);
-            LOG.info("extractConjunctsImpl 11111 add ->  root: {}, result: {}", root, result);
-            LOG.info("extractConjunctsImpl 11111 add->  root class: {}, result class: {}",
-                    root != null ? root.getClass() : "null",
-                    result != null ?
-                            result.stream().map(r -> r.getClass().toString()).collect(Collectors.toList())
-                            : " null");
             return;
         }
 
         CompoundPredicateOperator cpo = (CompoundPredicateOperator) root;
         if (!cpo.isAnd()) {
             result.add(root);
-            LOG.info("extractConjunctsImpl 22222 add ->  root: {}, result: {}", root, result);
-            LOG.info("extractConjunctsImpl 22222 add->  root class: {}, result class: {}",
-                    root != null ? root.getClass() : "null",
-                    result != null ?
-                            result.stream().map(r -> r.getClass().toString()).collect(Collectors.toList())
-                            : " null");
             return;
         }
         extractConjunctsImpl(cpo.getChild(0), result);
