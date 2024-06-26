@@ -817,10 +817,10 @@ public class PlanFragmentBuilder {
             if (ScanAttachPredicateContext.isScanAttachPredicateTable(node.getTable().getName())) {
                 ScanAttachPredicateContext scanAttachPredicateContext = ScanAttachPredicateContext.getContext();
                 colRefToColumnMetaMap = new HashMap<>(node.getColRefToColumnMetaMap());
-                ColumnRefOperator columnRefOperator = scanAttachPredicateContext.getAttachColumnRefOperator();
-                if (!colRefToColumnMetaMap.containsKey(columnRefOperator)) {
-                    colRefToColumnMetaMap.put(columnRefOperator, scanAttachPredicateContext.getAttachColumn());
-                }
+                //ColumnRefOperator columnRefOperator = scanAttachPredicateContext.getAttachColumnRefOperator();
+                //if (!colRefToColumnMetaMap.containsKey(columnRefOperator)) {
+                //    colRefToColumnMetaMap.put(columnRefOperator, scanAttachPredicateContext.getAttachColumn());
+                //}
             } else {
                 colRefToColumnMetaMap = node.getColRefToColumnMetaMap();
             }
@@ -849,7 +849,7 @@ public class PlanFragmentBuilder {
 
             List<ScalarOperator> predicates = new ArrayList<>();
             if (ScanAttachPredicateContext.isScanAttachPredicateTable(node.getTable().getName())) {
-                predicates.add(ScanAttachPredicateContext.getContext().getAttachPredicate());
+                //predicates.add(ScanAttachPredicateContext.getContext().getAttachPredicate());
             }
             predicates.addAll(originPredicates);
 
