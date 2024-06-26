@@ -46,6 +46,7 @@ import com.starrocks.analysis.HintNode;
 import com.starrocks.analysis.Parameter;
 import com.starrocks.analysis.RedirectStatus;
 import com.starrocks.analysis.SetVarHint;
+import com.starrocks.analysis.SlotRef;
 import com.starrocks.analysis.StringLiteral;
 import com.starrocks.analysis.TableName;
 import com.starrocks.analysis.UserVariableHint;
@@ -162,6 +163,7 @@ import com.starrocks.sql.common.StarRocksPlannerException;
 import com.starrocks.sql.optimizer.dump.QueryDumpInfo;
 import com.starrocks.sql.parser.ParsingException;
 import com.starrocks.sql.plan.ExecPlan;
+import com.starrocks.sql.plan.ScanAttachPredicateContext;
 import com.starrocks.statistic.AnalyzeJob;
 import com.starrocks.statistic.AnalyzeMgr;
 import com.starrocks.statistic.AnalyzeStatus;
@@ -329,7 +331,8 @@ public class StmtExecutor {
 
         RuntimeProfile plannerProfile = new RuntimeProfile("Planner");
         profile.addChild(plannerProfile);
-        Tracers.toRuntimeProfile(plannerProfile);;
+        Tracers.toRuntimeProfile(plannerProfile);
+        ;
         return profile;
     }
 
@@ -517,6 +520,12 @@ public class StmtExecutor {
                             }
                         }
                     } else {
+                        //mock
+                        ScanAttachPredicateContext.beginInPredicate(
+                                new SlotRef(new TableName(null, "lineitem"), "l_returnflag"),
+                                Arrays.asList(
+                                        new StringLiteral("A"),
+                                        new StringLiteral("R")));
                         execPlan = StatementPlanner.plan(parsedStmt, context);
                         if (parsedStmt instanceof QueryStatement && context.shouldDumpQuery()) {
                             context.getDumpInfo().setExplainInfo(execPlan.getExplainString(TExplainLevel.COSTS));
@@ -709,6 +718,7 @@ public class StmtExecutor {
             context.getState().setError(e.getMessage());
             context.getState().setErrType(QueryState.ErrType.INTERNAL_ERR);
         } finally {
+            ScanAttachPredicateContext.endInPredicate();
             GlobalStateMgr.getCurrentState().getMetadataMgr().removeQueryMetadata();
             if (context.getState().isError() && coord != null) {
                 coord.cancel(context.getState().getErrorMessage());

@@ -836,9 +836,14 @@ public class PlanFragmentBuilder {
                     node.getPredicate().getClass());
 
             // set predicate
-            List<ScalarOperator> predicates = Utils.extractConjuncts(node.getPredicate());
+            List<ScalarOperator> originPredicates = Utils.extractConjuncts(node.getPredicate());
             ScalarOperatorToExpr.FormatterContext formatterContext =
                     new ScalarOperatorToExpr.FormatterContext(context.getColRefToExpr());
+
+            List<ScalarOperator> predicates = new ArrayList<>();
+            predicates.add(ScanAttachPredicateContext.getContext().getOperator());
+            predicates.addAll(originPredicates);
+
             LOG.info("PlanFragmentBuilder ->>> predicates: {} ", predicates);
             for (ScalarOperator predicate : predicates) {
                 LOG.info("PlanFragmentBuilder ->>> predicate: {} ", predicate);

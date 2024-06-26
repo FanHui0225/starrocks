@@ -124,6 +124,7 @@ import com.starrocks.sql.optimizer.operator.scalar.SubqueryOperator;
 import com.starrocks.sql.optimizer.operator.stream.LogicalBinlogScanOperator;
 import com.starrocks.sql.optimizer.rewrite.ScalarOperatorRewriter;
 import com.starrocks.sql.optimizer.rewrite.scalar.ReduceCastRule;
+import com.starrocks.sql.plan.ScanAttachPredicateContext;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -494,7 +495,6 @@ public class RelationTransformer extends AstVisitor<LogicalPlan, ExpressionMappi
 
     @Override
     public LogicalPlan visitTable(TableRelation node, ExpressionMapping context) {
-        //TODO   test ->>>>>>>>>>>>
         ImmutableMap.Builder<ColumnRefOperator, Column> colRefToColumnMetaMapBuilder = ImmutableMap.builder();
         ImmutableMap.Builder<Column, ColumnRefOperator> columnMetaToColRefMapBuilder = ImmutableMap.builder();
         ImmutableList.Builder<ColumnRefOperator> outputVariablesBuilder = ImmutableList.builder();
@@ -520,6 +520,9 @@ public class RelationTransformer extends AstVisitor<LogicalPlan, ExpressionMappi
         if (node.getPartitionPredicate() != null) {
             partitionPredicate = SqlToScalarOperatorTranslator.translate(node.getPartitionPredicate(),
                     new ExpressionMapping(node.getScope(), outputVariables), columnRefFactory);
+        }
+        if (ScanAttachPredicateContext.isScanAttachPredicateTable(node.getTable().getName())) {
+            ScanAttachPredicateContext.getContext().prepare(node.getScope(), outputVariables);
         }
 
         LogicalScanOperator scanOperator;

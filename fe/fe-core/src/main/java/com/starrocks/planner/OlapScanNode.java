@@ -833,7 +833,6 @@ public class OlapScanNode extends ScanNode {
         for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
             builder.append(ste + "\n");
         }
-        LOG.info("OlapScanNode -> StackTrace: {}", builder.toString());
         List<String> keyColumnNames = new ArrayList<String>();
         List<TPrimitiveType> keyColumnTypes = new ArrayList<TPrimitiveType>();
         List<TColumn> columnsDesc = new ArrayList<TColumn>();

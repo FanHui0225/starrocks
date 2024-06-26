@@ -290,6 +290,7 @@ public final class SqlToScalarOperatorTranslator {
             return super.visit(node, context);
 
         }
+
         @Override
         public ScalarOperator visitParameterExpr(Parameter node, Context context) {
             if (node.getExpr() == null) {
@@ -583,6 +584,7 @@ public final class SqlToScalarOperatorTranslator {
                 throw new SemanticException("Subquery in left-side child of in-predicate is not supported");
             }
             if (!(node.getChild(1) instanceof Subquery)) {
+                LOG.info("visitInPredicate new InPredicateOperator >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
                 return new InPredicateOperator(node.isNotIn(),
                         node.getChildren().stream()
                                 .map(child -> visit(child, context))
@@ -799,7 +801,7 @@ public final class SqlToScalarOperatorTranslator {
 
                 subqueryOutput = new CallOperator(FunctionSet.IFNULL, Type.BIGINT,
                         Lists.newArrayList(subqueryOutput, ConstantOperator.createBigint(0)),
-                        Expr.getBuiltinFunction(FunctionSet.IFNULL, new Type[] {Type.BIGINT, Type.BIGINT},
+                        Expr.getBuiltinFunction(FunctionSet.IFNULL, new Type[]{Type.BIGINT, Type.BIGINT},
                                 Function.CompareMode.IS_IDENTICAL));
             }
 

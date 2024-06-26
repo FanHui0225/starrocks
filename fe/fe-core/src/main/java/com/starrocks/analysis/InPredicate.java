@@ -57,30 +57,12 @@ import java.util.List;
 
 public class InPredicate extends Predicate {
 
-    private static final Logger LOG = LogManager.getLogger(InPredicate.class);
     private final boolean isNotIn;
 
     // First child is the comparison expr for which we
     // should check membership in the inList (the remaining children).
     public InPredicate(Expr compareExpr, List<Expr> inList, boolean isNotIn) {
         this(compareExpr, inList, isNotIn, NodePosition.ZERO);
-        StringBuilder builder = new StringBuilder();
-        for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
-            builder.append(ste + "\n");
-        }
-        LOG.info("InPredicate(1) -> StackTrace: {}, " +
-                        "compareExpr: {}, " +
-                        "inList: {}, " +
-                        "isNotIn: {}, " +
-                        "compareExpr class: {} ",
-                builder.toString(),
-                String.valueOf(compareExpr),
-                inList,
-                isNotIn,
-                compareExpr != null ?
-                        compareExpr.getClass().toString()
-                        : "null");
-
     }
 
     public InPredicate(Expr compareExpr, List<Expr> inList, boolean isNotIn, NodePosition pos) {
@@ -89,24 +71,6 @@ public class InPredicate extends Predicate {
         children.addAll(inList);
         this.isNotIn = isNotIn;
         this.opcode = isNotIn ? TExprOpcode.FILTER_NOT_IN : TExprOpcode.FILTER_IN;
-
-        StringBuilder builder = new StringBuilder();
-        for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
-            builder.append(ste + "\n");
-        }
-        LOG.info("InPredicate(2) -> StackTrace: {}, " +
-                        "compareExpr: {}, " +
-                        "inList: {}, " +
-                        "isNotIn: {}, " +
-                        "compareExpr class: {} ",
-                builder.toString(),
-                String.valueOf(compareExpr),
-                inList,
-                isNotIn,
-                compareExpr != null ?
-                        compareExpr.getClass().toString()
-                        : "null");
-
     }
 
     protected InPredicate(InPredicate other) {
