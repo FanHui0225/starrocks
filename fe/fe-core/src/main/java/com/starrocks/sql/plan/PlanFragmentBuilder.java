@@ -846,7 +846,9 @@ public class PlanFragmentBuilder {
             }
             predicates.addAll(originPredicates);
 
-            LOG.info("PlanFragmentBuilder ->>> predicates: {} ", predicates);
+            LOG.info("PlanFragmentBuilder ->>> predicates: {}, colRefToExpr: {} ",
+                    predicates,
+                    context.getColRefToExpr());
             for (ScalarOperator predicate : predicates) {
                 LOG.info("PlanFragmentBuilder ->>> predicate: {} ", predicate);
                 scanNode.getConjuncts().add(ScalarOperatorToExpr.buildExecExpression(predicate, formatterContext));
