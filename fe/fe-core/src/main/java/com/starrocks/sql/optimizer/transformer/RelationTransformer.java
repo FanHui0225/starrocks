@@ -521,12 +521,8 @@ public class RelationTransformer extends AstVisitor<LogicalPlan, ExpressionMappi
             partitionPredicate = SqlToScalarOperatorTranslator.translate(node.getPartitionPredicate(),
                     new ExpressionMapping(node.getScope(), outputVariables), columnRefFactory);
         }
-        if (ScanAttachPredicateContext.isScanAttachPredicateTable(node.getTable().getName())) {
-            ScanAttachPredicateContext.getContext().prepare(
-                    node.getScope(),
-                    outputVariables,
-                    columnMetaToColRefMap);
-        }
+
+        ScanAttachPredicateContext.prepareAttachScanPredicate(node, outputVariables, columnMetaToColRefMap);
 
         LogicalScanOperator scanOperator;
         if (node.getTable().isNativeTableOrMaterializedView()) {

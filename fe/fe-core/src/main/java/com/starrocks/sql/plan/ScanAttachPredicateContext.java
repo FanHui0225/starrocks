@@ -22,6 +22,7 @@ import com.starrocks.analysis.TableName;
 import com.starrocks.catalog.Column;
 import com.starrocks.sql.analyzer.ResolvedField;
 import com.starrocks.sql.analyzer.Scope;
+import com.starrocks.sql.ast.TableRelation;
 import com.starrocks.sql.optimizer.operator.OperatorType;
 import com.starrocks.sql.optimizer.operator.scalar.ColumnRefOperator;
 import com.starrocks.sql.optimizer.operator.scalar.ConstantOperator;
@@ -33,6 +34,8 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -46,31 +49,172 @@ public final class ScanAttachPredicateContext {
             SCAN_ATTACH_PREDICATE_CONTEXT = new ThreadLocal<>();
 
     private final OperatorType opType;
-    private String attachTargetTablePrefix;
-    private SlotRef attachCompareExpr;
+
+    public class ScanAttachPredicate {
+        String tableName;
+        String columnName;
+        SlotRef attachCompareExpr;
+        LiteralExpr[] attachValueExprs;
+
+        int relationFieldIndex;
+        ColumnRefOperator[] fieldMappings;
+        Column[] columnMappings;
+        ScalarOperator[] scalarOperators;
+
+        ScanAttachPredicate(TableName tableName, SlotRef attachCompareExpr, LiteralExpr[] attachValueExprs) {
+            this.attachCompareExpr = attachCompareExpr;
+            this.attachValueExprs = new LiteralExpr[attachValueExprs.length];
+            System.arraycopy(attachValueExprs, 0, this.attachValueExprs, 0, attachValueExprs.length);
+            this.tableName = tableName.getNoClusterString();
+            this.columnName = attachCompareExpr.getColumnName();
+        }
+
+        void resolve(Scope scope,
+                     List<ColumnRefOperator> fieldMappings,
+                     Map<Column, ColumnRefOperator> columnMetaToColRefMap) {
+            this.fieldMappings = new ColumnRefOperator[fieldMappings.size()];
+            this.columnMappings = new Column[fieldMappings.size()];
+            fieldMappings.toArray(this.fieldMappings);
+            Map<ColumnRefOperator, Column> colRefToColumnMetaMap =
+                    columnMetaToColRefMap
+                            .entrySet()
+                            .stream()
+                            .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+            for (int i = 0; i < this.fieldMappings.length; i++) {
+                this.columnMappings[i] = colRefToColumnMetaMap.get(this.fieldMappings[i]);
+                if (this.fieldMappings[i].getName().equals(this.columnName)) {
+                    this.relationFieldIndex = i;
+                    LOG.info("ScanAttachPredicate[{}]-[{}] resolve, relationFieldIndex: {}.",
+                            this.tableName,
+                            this.columnName,
+                            this.relationFieldIndex);
+                }
+            }
+            ResolvedField resolvedField;
+            try {
+                resolvedField = scope.resolveField(this.attachCompareExpr);
+                this.relationFieldIndex = resolvedField.getRelationFieldIndex();
+            } catch (Exception ex) {
+                resolvedField = null;
+                LOG.error("ScanAttachPredicate[{}]-[{}] resolve field error,",
+                        this.tableName,
+                        this.columnName,
+                        ex);
+            }
+            this.scalarOperators = new ScalarOperator[attachValueExprs.length + 1];
+            this.scalarOperators[0] = this.fieldMappings[this.relationFieldIndex];
+            for (int i = 0; i < attachValueExprs.length; i++) {
+                this.scalarOperators[i + 1] = visitLiteral(attachValueExprs[i]);
+            }
+            LOG.info("ScanAttachPredicate[{}]-[{}] resolve, scalarOperators: {}, relationFieldIndex: {}.",
+                    this.tableName,
+                    this.columnName,
+                    scalarOperators != null ? Arrays.toString(scalarOperators) : null,
+                    this.relationFieldIndex);
+        }
+
+        public Column getAttachColumn() {
+            return this.columnMappings[this.relationFieldIndex];
+        }
+
+        public ColumnRefOperator getAttachColumnRefOperator() {
+            return this.fieldMappings[this.relationFieldIndex];
+        }
+
+        public ScalarOperator getAttachPredicate() {
+            return new InPredicateOperator(false, scalarOperators);
+        }
+
+        public String getAttachTableName() {
+            return this.tableName;
+        }
+
+        ScalarOperator visitLiteral(LiteralExpr node) {
+            if (node instanceof NullLiteral) {
+                return ConstantOperator.createNull(node.getType());
+            }
+            return ConstantOperator.createObject(node.getRealObjectValue(), node.getType());
+        }
+    }
+
+    static class SlotRefMatcher implements Predicate<TableName> {
+
+        SlotRef attachCompareExpr;
+
+        SlotRefMatcher(SlotRef attachCompareExpr) {
+            this.attachCompareExpr = attachCompareExpr;
+        }
+
+        @Override
+        public boolean test(TableName tableName) {
+            return false;
+        }
+    }
+
     private LiteralExpr[] attachValueExprs;
+    private SlotRefMatcher[] slotRefMatchers;
+    // raw db table id -> predicate
+    private Map<Long, ScanAttachPredicate> tblIdToAttachPredicateMap = new ConcurrentHashMap<>();
 
-    private int relationFieldIndex;
-    private ColumnRefOperator[] fieldMappings;
-    private Column[] columnMappings;
-    ScalarOperator[] scalarOperators;
-
-    private ScanAttachPredicateContext(OperatorType opType) {
+    private ScanAttachPredicateContext(OperatorType opType,
+                                       SlotRef[] attachCompareExprs,
+                                       LiteralExpr[] attachValueExprs) {
         this.opType = opType;
+        this.slotRefMatchers = new SlotRefMatcher[attachCompareExprs.length];
+        for (int i = 0; i < slotRefMatchers.length; i++) {
+            SlotRef attachCompareExpr = attachCompareExprs[i];
+            this.slotRefMatchers[i] = new SlotRefMatcher(attachCompareExpr);
+        }
+        this.attachValueExprs = attachValueExprs;
     }
 
     public OperatorType getOpType() {
         return opType;
     }
 
-    public static boolean isScanAttachPredicateTable(String tableName) {
+    public void prepare(long tableId,
+                        TableName tableName,
+                        Scope scope,
+                        List<ColumnRefOperator> fieldMappings,
+                        Map<Column, ColumnRefOperator> columnMetaToColRefMap) {
+        Preconditions.checkNotNull(tableName);
+        for (SlotRefMatcher matcher : slotRefMatchers) {
+            if (matcher.test(tableName)) {
+                ScanAttachPredicate predicate = new ScanAttachPredicate(
+                        tableName,
+                        matcher.attachCompareExpr,
+                        this.attachValueExprs);
+                predicate.resolve(scope, fieldMappings, columnMetaToColRefMap);
+                this.tblIdToAttachPredicateMap.put(tableId, predicate);
+            }
+        }
+    }
+
+    public ScanAttachPredicate getAttachInPredicate(long tableId) {
+        return tblIdToAttachPredicateMap.get(tableId);
+    }
+
+    public void destroy() {
+        this.attachValueExprs = null;
+        this.slotRefMatchers = null;
+        this.tblIdToAttachPredicateMap.clear();
+    }
+
+    public static boolean isAttachScanPredicateTable(long tableId) {
         ScanAttachPredicateContext context = getContext();
-        if (context == null || tableName == null) {
+        if (context == null) {
             return false;
         } else {
-            return tableName
-                    .toUpperCase()
-                    .startsWith(context.attachTargetTablePrefix.toUpperCase());
+            return context.tblIdToAttachPredicateMap.containsKey(tableId);
+        }
+    }
+
+    public static ScanAttachPredicate getAttachScanPredicate(long tableId) {
+        ScanAttachPredicateContext context = getContext();
+        if (context == null) {
+            return null;
+        } else {
+            return context.getAttachInPredicate(tableId);
         }
     }
 
@@ -78,88 +222,34 @@ public final class ScanAttachPredicateContext {
         return SCAN_ATTACH_PREDICATE_CONTEXT.get();
     }
 
-    public void prepare(Scope scope,
-                        List<ColumnRefOperator> fieldMappings,
-                        Map<Column, ColumnRefOperator> columnMetaToColRefMap) {
-        this.fieldMappings = new ColumnRefOperator[fieldMappings.size()];
-        this.columnMappings = new Column[fieldMappings.size()];
-        fieldMappings.toArray(this.fieldMappings);
-        Map<ColumnRefOperator, Column> colRefToColumnMetaMap =
-                columnMetaToColRefMap
-                        .entrySet()
-                        .stream()
-                        .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
-        for (int i = 0; i < this.fieldMappings.length; i++) {
-            columnMappings[i] = colRefToColumnMetaMap.get(this.fieldMappings[i]);
-            if (this.fieldMappings[i].getName().equals(this.attachCompareExpr.getColumnName())) {
-                this.relationFieldIndex = i;
-                LOG.info("[ScanAttachPredicateContext] prepare, " +
-                        "relationFieldIndex: {}.", this.relationFieldIndex);
-            }
-        }
-        ResolvedField resolvedField;
-        try {
-            resolvedField = scope.resolveField(this.attachCompareExpr);
-            this.relationFieldIndex = resolvedField.getRelationFieldIndex();
-        } catch (Exception ex) {
-            resolvedField = null;
-            LOG.error("[ScanAttachPredicateContext] prepare, resolve field error", ex);
-        }
-        this.scalarOperators = new ScalarOperator[attachValueExprs.length + 1];
-        scalarOperators[0] = this.fieldMappings[this.relationFieldIndex];
-        for (int i = 0; i < attachValueExprs.length; i++) {
-            scalarOperators[i + 1] = visitLiteral(attachValueExprs[i]);
-        }
-        LOG.info("[ScanAttachPredicateContext] prepare, " +
-                        "scalarOperators: {}, relationFieldIndex: {}.",
-                scalarOperators != null ? Arrays.toString(scalarOperators) : null,
-                this.relationFieldIndex);
-    }
-
-    public Column getAttachColumn() {
-        return this.columnMappings[this.relationFieldIndex];
-    }
-
-    public ColumnRefOperator getAttachColumnRefOperator() {
-        return this.fieldMappings[this.relationFieldIndex];
-    }
-
-    public ScalarOperator getAttachPredicate() {
-        return new InPredicateOperator(false, scalarOperators);
-    }
-
-    protected ScalarOperator visitLiteral(LiteralExpr node) {
-        if (node instanceof NullLiteral) {
-            return ConstantOperator.createNull(node.getType());
-        }
-        return ConstantOperator.createObject(node.getRealObjectValue(), node.getType());
-    }
-
-    public static void beginInPredicate(SlotRef attachCompareExpr,
-                                        List<LiteralExpr> attachValueExprs) {
+    public static void beginAttachScanPredicate(
+            SlotRef[] attachCompareExprs,
+            LiteralExpr[] attachValueExprs) {
+        Preconditions.checkNotNull(attachCompareExprs);
+        Preconditions.checkNotNull(attachValueExprs);
         ScanAttachPredicateContext context = SCAN_ATTACH_PREDICATE_CONTEXT.get();
         if (context == null) {
-            context = new ScanAttachPredicateContext(OperatorType.IN);
+            context = new ScanAttachPredicateContext(OperatorType.IN, attachCompareExprs, attachValueExprs);
             SCAN_ATTACH_PREDICATE_CONTEXT.set(context);
         }
-        context.attachCompareExpr = attachCompareExpr;
-        context.attachValueExprs = new LiteralExpr[attachValueExprs.size()];
-        attachValueExprs.toArray(context.attachValueExprs);
-        TableName tableName;
-        Preconditions.checkNotNull(tableName = attachCompareExpr.getTblNameWithoutAnalyzed());
-        context.attachTargetTablePrefix = tableName.getTbl();
     }
 
-    public static void endInPredicate() {
+    public static void prepareAttachScanPredicate(TableRelation tableRelation,
+                                                  List<ColumnRefOperator> fieldMappings,
+                                                  Map<Column, ColumnRefOperator> columnMetaToColRefMap) {
         ScanAttachPredicateContext context = SCAN_ATTACH_PREDICATE_CONTEXT.get();
         if (context != null) {
-            context.attachTargetTablePrefix = null;
-            context.attachCompareExpr = null;
-            context.attachValueExprs = null;
+            TableName tableName = tableRelation.getName();
+            long tableId = tableRelation.getTable().getId();
+            Scope scope = tableRelation.getScope();
+            context.prepare(tableId, tableName, scope, fieldMappings, columnMetaToColRefMap);
+        }
+    }
 
-            context.fieldMappings = null;
-            context.columnMappings = null;
-            context.scalarOperators = null;
+    public static void endAttachScanPredicate() {
+        ScanAttachPredicateContext context = SCAN_ATTACH_PREDICATE_CONTEXT.get();
+        if (context != null) {
+            context.destroy();
             SCAN_ATTACH_PREDICATE_CONTEXT.set(null);
         }
     }

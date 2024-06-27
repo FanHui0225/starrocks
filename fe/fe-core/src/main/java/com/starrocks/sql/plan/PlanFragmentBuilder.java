@@ -813,13 +813,16 @@ public class PlanFragmentBuilder {
                         "Build Exec OlapScanNode fail, scan info is invalid", INTERNAL_ERROR, e);
             }
 
+
+            boolean isAttachScanPredicateTable = ScanAttachPredicateContext.isAttachScanPredicateTable(referenceTable.getId());
+            ScanAttachPredicateContext.ScanAttachPredicate scanAttachPredicate = null;
             Map<ColumnRefOperator, Column> colRefToColumnMetaMap;
-            if (ScanAttachPredicateContext.isScanAttachPredicateTable(node.getTable().getName())) {
-                ScanAttachPredicateContext scanAttachPredicateContext = ScanAttachPredicateContext.getContext();
+            if (isAttachScanPredicateTable) {
+                scanAttachPredicate = ScanAttachPredicateContext.getAttachScanPredicate(referenceTable.getId());
                 colRefToColumnMetaMap = new HashMap<>(node.getColRefToColumnMetaMap());
-                ColumnRefOperator columnRefOperator = scanAttachPredicateContext.getAttachColumnRefOperator();
+                ColumnRefOperator columnRefOperator = scanAttachPredicate.getAttachColumnRefOperator();
                 if (!colRefToColumnMetaMap.containsKey(columnRefOperator)) {
-                    colRefToColumnMetaMap.put(columnRefOperator, scanAttachPredicateContext.getAttachColumn());
+                    colRefToColumnMetaMap.put(columnRefOperator, scanAttachPredicate.getAttachColumn());
                 }
             } else {
                 colRefToColumnMetaMap = node.getColRefToColumnMetaMap();
@@ -848,8 +851,8 @@ public class PlanFragmentBuilder {
                     new ScalarOperatorToExpr.FormatterContext(context.getColRefToExpr());
 
             List<ScalarOperator> predicates = new ArrayList<>();
-            if (ScanAttachPredicateContext.isScanAttachPredicateTable(node.getTable().getName())) {
-                predicates.add(ScanAttachPredicateContext.getContext().getAttachPredicate());
+            if (scanAttachPredicate != null) {
+                predicates.add(scanAttachPredicate.getAttachPredicate());
             }
             predicates.addAll(originPredicates);
 

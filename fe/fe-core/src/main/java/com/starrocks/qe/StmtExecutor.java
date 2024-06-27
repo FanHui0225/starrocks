@@ -43,6 +43,7 @@ import com.google.common.collect.Sets;
 import com.starrocks.analysis.Analyzer;
 import com.starrocks.analysis.Expr;
 import com.starrocks.analysis.HintNode;
+import com.starrocks.analysis.LiteralExpr;
 import com.starrocks.analysis.Parameter;
 import com.starrocks.analysis.RedirectStatus;
 import com.starrocks.analysis.SetVarHint;
@@ -521,11 +522,12 @@ public class StmtExecutor {
                         }
                     } else {
                         //mock
-                        ScanAttachPredicateContext.beginInPredicate(
-                                new SlotRef(new TableName(null, "lineitem"), "l_returnflag"),
-                                Arrays.asList(
-                                        new StringLiteral("A"),
-                                        new StringLiteral("R")));
+                        SlotRef[] slotRefs = {new SlotRef(new TableName("tpch", "lineitem"), "l_returnflag")};
+                        LiteralExpr[] literalExprs = {new StringLiteral("A"), new StringLiteral("R")};
+                        ScanAttachPredicateContext.beginAttachScanPredicate(
+                                slotRefs,
+                                literalExprs
+                        );
                         execPlan = StatementPlanner.plan(parsedStmt, context);
                         if (parsedStmt instanceof QueryStatement && context.shouldDumpQuery()) {
                             context.getDumpInfo().setExplainInfo(execPlan.getExplainString(TExplainLevel.COSTS));
@@ -718,7 +720,7 @@ public class StmtExecutor {
             context.getState().setError(e.getMessage());
             context.getState().setErrType(QueryState.ErrType.INTERNAL_ERR);
         } finally {
-            ScanAttachPredicateContext.endInPredicate();
+            ScanAttachPredicateContext.endAttachScanPredicate();
             GlobalStateMgr.getCurrentState().getMetadataMgr().removeQueryMetadata();
             if (context.getState().isError() && coord != null) {
                 coord.cancel(context.getState().getErrorMessage());
