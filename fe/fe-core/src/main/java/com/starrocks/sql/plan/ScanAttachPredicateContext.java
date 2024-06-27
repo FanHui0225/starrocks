@@ -68,7 +68,9 @@ public final class ScanAttachPredicateContext {
         if (context == null || tableName == null) {
             return false;
         } else {
-            return tableName.toUpperCase().startsWith(context.attachTargetTablePrefix.toUpperCase());
+            return tableName
+                    .toUpperCase()
+                    .startsWith(context.attachTargetTablePrefix.toUpperCase());
         }
     }
 
@@ -91,7 +93,7 @@ public final class ScanAttachPredicateContext {
             columnMappings[i] = colRefToColumnMetaMap.get(this.fieldMappings[i]);
             if (this.fieldMappings[i].getName().equals(this.attachCompareExpr.getColumnName())) {
                 this.relationFieldIndex = i;
-                LOG.info("ScanAttachPredicateContext prepare, " +
+                LOG.info("[ScanAttachPredicateContext] prepare, " +
                         "relationFieldIndex: {}.", this.relationFieldIndex);
             }
         }
@@ -99,16 +101,16 @@ public final class ScanAttachPredicateContext {
         try {
             resolvedField = scope.resolveField(this.attachCompareExpr);
             this.relationFieldIndex = resolvedField.getRelationFieldIndex();
-        } catch (Exception exception) {
+        } catch (Exception ex) {
             resolvedField = null;
-            LOG.error("prepare -> resolveField ", exception);
+            LOG.error("[ScanAttachPredicateContext] prepare, resolve field error", ex);
         }
         this.scalarOperators = new ScalarOperator[attachValueExprs.length + 1];
         scalarOperators[0] = this.fieldMappings[this.relationFieldIndex];
         for (int i = 0; i < attachValueExprs.length; i++) {
             scalarOperators[i + 1] = visitLiteral(attachValueExprs[i]);
         }
-        LOG.info("ScanAttachPredicateContext prepare, " +
+        LOG.info("[ScanAttachPredicateContext] prepare, " +
                         "scalarOperators: {}, relationFieldIndex: {}.",
                 scalarOperators != null ? Arrays.toString(scalarOperators) : null,
                 this.relationFieldIndex);
@@ -133,7 +135,8 @@ public final class ScanAttachPredicateContext {
         return ConstantOperator.createObject(node.getRealObjectValue(), node.getType());
     }
 
-    public static void beginInPredicate(SlotRef attachCompareExpr, List<LiteralExpr> attachValueExprs) {
+    public static void beginInPredicate(SlotRef attachCompareExpr,
+                                        List<LiteralExpr> attachValueExprs) {
         ScanAttachPredicateContext context = SCAN_ATTACH_PREDICATE_CONTEXT.get();
         if (context == null) {
             context = new ScanAttachPredicateContext(OperatorType.IN);
