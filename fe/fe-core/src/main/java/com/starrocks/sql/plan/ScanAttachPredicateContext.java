@@ -147,7 +147,26 @@ public final class ScanAttachPredicateContext {
 
         @Override
         public boolean test(TableName tableName) {
-            return false;
+            String dbName = tableName.getDb();
+            String tblName = tableName.getTbl();
+            TableName testTableName = attachCompareExpr.getTableName();
+            String testDbName = testTableName.getDb();
+            String testTblName = testTableName.getTbl();
+
+            LOG.info("SlotRefMatcher test, " +
+                            "dbName: {}, " +
+                            "tblName: {}, " +
+                            "testDbName: {}, " +
+                            "testTblName: {}.",
+                    dbName,
+                    tblName,
+                    testDbName,
+                    testTblName);
+            if (testDbName == null) {
+                return tblName.startsWith(testTblName);
+            } else {
+                return dbName.equals(testDbName) && tblName.startsWith(testTblName);
+            }
         }
     }
 
