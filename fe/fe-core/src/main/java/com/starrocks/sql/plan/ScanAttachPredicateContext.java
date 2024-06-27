@@ -149,7 +149,7 @@ public final class ScanAttachPredicateContext {
         public boolean test(TableName tableName) {
             String dbName = tableName.getDb();
             String tblName = tableName.getTbl();
-            TableName testTableName = attachCompareExpr.getTableName();
+            TableName testTableName = attachCompareExpr.getTblNameWithoutAnalyzed();
             String testDbName = testTableName.getDb();
             String testTblName = testTableName.getTbl();
 
