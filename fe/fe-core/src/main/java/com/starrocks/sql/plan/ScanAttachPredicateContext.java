@@ -114,7 +114,7 @@ public final class ScanAttachPredicateContext {
         LOG.info("prepare -> Field: {}", resolvedField != null ? resolvedField.getField() : null);
         LOG.info("prepare -> RelationFieldIndex: {}", resolvedField != null ? resolvedField.getRelationFieldIndex() : -1);
         this.scalarOperators = new ScalarOperator[attachValueExprs.length + 1];
-        scalarOperators[0] = this.fieldMappings[resolvedField.getRelationFieldIndex()];
+        scalarOperators[0] = this.fieldMappings[this.relationFieldIndex];
         for (int i = 0; i < attachValueExprs.length; i++) {
             scalarOperators[i + 1] = visitLiteral(attachValueExprs[i]);
         }
