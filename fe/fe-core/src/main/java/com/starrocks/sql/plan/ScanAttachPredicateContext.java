@@ -45,7 +45,7 @@ public final class ScanAttachPredicateContext {
     private static final ThreadLocal<ScanAttachPredicateContext>
             SCAN_ATTACH_PREDICATE_CONTEXT = new ThreadLocal<>();
 
-    private OperatorType opType;
+    private final OperatorType opType;
     private String attachTargetTablePrefix;
     private SlotRef attachCompareExpr;
     private LiteralExpr[] attachValueExprs;
@@ -54,7 +54,6 @@ public final class ScanAttachPredicateContext {
     private ColumnRefOperator[] fieldMappings;
     private Column[] columnMappings;
     ScalarOperator[] scalarOperators;
-
 
     private ScanAttachPredicateContext(OperatorType opType) {
         this.opType = opType;
@@ -69,7 +68,6 @@ public final class ScanAttachPredicateContext {
         if (context == null || tableName == null) {
             return false;
         } else {
-            LOG.info("isScanAttachPredicateTable > {} - {}", tableName, context.attachTargetTablePrefix);
             return tableName.toUpperCase().startsWith(context.attachTargetTablePrefix.toUpperCase());
         }
     }
@@ -91,15 +89,10 @@ public final class ScanAttachPredicateContext {
                         .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
         for (int i = 0; i < this.fieldMappings.length; i++) {
             columnMappings[i] = colRefToColumnMetaMap.get(this.fieldMappings[i]);
-            LOG.info("prepare -> " +
-                            "fieldMappings[{}]: {}," +
-                            " columnMappings[{}]: {}",
-                    i, this.fieldMappings[i],
-                    i, columnMappings[i]);
             if (this.fieldMappings[i].getName().equals(this.attachCompareExpr.getColumnName())) {
                 this.relationFieldIndex = i;
-                LOG.info("prepare -> " +
-                        "relationFieldIndex: {}", this.relationFieldIndex);
+                LOG.info("ScanAttachPredicateContext prepare, " +
+                        "relationFieldIndex: {}.", this.relationFieldIndex);
             }
         }
         ResolvedField resolvedField;
@@ -110,15 +103,15 @@ public final class ScanAttachPredicateContext {
             resolvedField = null;
             LOG.error("prepare -> resolveField ", exception);
         }
-        LOG.info("prepare -> resolvedField: {}", resolvedField);
-        LOG.info("prepare -> Field: {}", resolvedField != null ? resolvedField.getField() : null);
-        LOG.info("prepare -> RelationFieldIndex: {}", resolvedField != null ? resolvedField.getRelationFieldIndex() : -1);
         this.scalarOperators = new ScalarOperator[attachValueExprs.length + 1];
         scalarOperators[0] = this.fieldMappings[this.relationFieldIndex];
         for (int i = 0; i < attachValueExprs.length; i++) {
             scalarOperators[i + 1] = visitLiteral(attachValueExprs[i]);
         }
-        LOG.info("prepare -> scalarOperators: {}", scalarOperators != null ? Arrays.toString(scalarOperators) : null);
+        LOG.info("ScanAttachPredicateContext prepare, " +
+                        "scalarOperators: {}, relationFieldIndex: {}.",
+                scalarOperators != null ? Arrays.toString(scalarOperators) : null,
+                this.relationFieldIndex);
     }
 
     public Column getAttachColumn() {
@@ -157,8 +150,13 @@ public final class ScanAttachPredicateContext {
     public static void endInPredicate() {
         ScanAttachPredicateContext context = SCAN_ATTACH_PREDICATE_CONTEXT.get();
         if (context != null) {
+            context.attachTargetTablePrefix = null;
             context.attachCompareExpr = null;
             context.attachValueExprs = null;
+
+            context.fieldMappings = null;
+            context.columnMappings = null;
+            context.scalarOperators = null;
             SCAN_ATTACH_PREDICATE_CONTEXT.set(null);
         }
     }
