@@ -103,10 +103,12 @@ public final class ScanAttachPredicateContext {
                         this.columnName,
                         ex);
             }
+            Column column = this.columnMappings[this.relationFieldIndex];
+            this.attachCompareExpr.setType(column.getType());
             this.scalarOperators = new ScalarOperator[attachValueExprs.length + 1];
             this.scalarOperators[0] = this.fieldMappings[this.relationFieldIndex];
             for (int i = 0; i < attachValueExprs.length; i++) {
-                this.scalarOperators[i + 1] = visitLiteral(attachValueExprs[i]);
+                this.scalarOperators[i + 1] = visitLiteral(attachValueExprs[i], column);
             }
             LOG.info("ScanAttachPredicate[{}]-[{}] resolve, scalarOperators: {}, relationFieldIndex: {}.",
                     this.tableName,
@@ -131,11 +133,11 @@ public final class ScanAttachPredicateContext {
             return this.tableName;
         }
 
-        ScalarOperator visitLiteral(LiteralExpr node) {
+        ScalarOperator visitLiteral(LiteralExpr node, Column column) {
             if (node instanceof NullLiteral) {
                 return ConstantOperator.createNull(node.getType());
             }
-            return ConstantOperator.createObject(node.getRealObjectValue(), node.getType());
+            return ConstantOperator.createObject(node.getRealObjectValue(), column.getType());
         }
     }
 
