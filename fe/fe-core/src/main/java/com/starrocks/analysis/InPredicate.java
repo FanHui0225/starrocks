@@ -46,7 +46,6 @@ import com.starrocks.thrift.TInPredicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -56,6 +55,8 @@ import java.util.List;
  */
 
 public class InPredicate extends Predicate {
+
+    private static final Logger LOG = LogManager.getLogger(InPredicate.class);
 
     private final boolean isNotIn;
 
@@ -160,6 +161,17 @@ public class InPredicate extends Predicate {
 
     @Override
     public String toString() {
+
+        LOG.info("InPredicate >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> > " +
+                "children: {}.", this.children);
+        for (int i = 0; i < children.size(); i++) {
+            Expr expr = children.get(i);
+            LOG.info("InPredicate >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> > " +
+                            "children[{}]: {}, class: {}.",
+                    i,
+                    this.children.get(i),
+                    this.children.get(i).getClass());
+        }
         return toSql();
     }
 

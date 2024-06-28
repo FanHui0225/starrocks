@@ -829,11 +829,11 @@ public class OlapScanNode extends ScanNode {
 
     @Override
     protected void toThrift(TPlanNode msg) {
-        StringBuilder builder = new StringBuilder();
-        for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
-            builder.append(ste + "\n");
-        }
-        LOG.info("OlapScanNode toThrift -> StackTrace: {}", builder.toString());
+//        StringBuilder builder = new StringBuilder();
+//        for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
+//            builder.append(ste + "\n");
+//        }
+//        LOG.info("OlapScanNode toThrift -> StackTrace: {}", builder.toString());
         List<String> keyColumnNames = new ArrayList<String>();
         List<TPrimitiveType> keyColumnTypes = new ArrayList<TPrimitiveType>();
         List<TColumn> columnsDesc = new ArrayList<TColumn>();
