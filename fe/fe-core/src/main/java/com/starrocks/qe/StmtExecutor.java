@@ -462,10 +462,12 @@ public class StmtExecutor {
                 // set isQuery before `forwardToLeader` to make it right for audit log.
                 context.getState().setIsQuery(isQuery);
 
-                QueryStatement queryStatement = (QueryStatement) parsedStmt;
-                if (isQuery && queryStatement.hasQueryAttachScanPredicate()) {
-                    ScanAttachPredicateContext
-                            .beginAttachScanPredicate(queryStatement.getQueryAttachScanPredicate());
+                if (isQuery) {
+                    QueryStatement queryStatement = (QueryStatement) parsedStmt;
+                    if (queryStatement.hasQueryAttachScanPredicate()) {
+                        ScanAttachPredicateContext
+                                .beginAttachScanPredicate(queryStatement.getQueryAttachScanPredicate());
+                    }
                 }
             }
 
