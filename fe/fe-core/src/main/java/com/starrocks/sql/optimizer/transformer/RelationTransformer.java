@@ -501,7 +501,6 @@ public class RelationTransformer extends AstVisitor<LogicalPlan, ExpressionMappi
 
         int relationId = columnRefFactory.getNextRelationId();
         for (Map.Entry<Field, Column> column : node.getColumns().entrySet()) {
-            LOG.info("visitTable -> column tpye: {}, column: {}", column.getKey(), column.getValue());
             ColumnRefOperator columnRef = columnRefFactory.create(column.getKey().getName(),
                     column.getKey().getType(),
                     column.getValue().isAllowNull());
