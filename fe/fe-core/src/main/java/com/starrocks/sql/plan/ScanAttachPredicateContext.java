@@ -20,8 +20,10 @@ import com.starrocks.analysis.NullLiteral;
 import com.starrocks.analysis.SlotRef;
 import com.starrocks.analysis.TableName;
 import com.starrocks.catalog.Column;
+import com.starrocks.server.RunMode;
 import com.starrocks.sql.analyzer.ResolvedField;
 import com.starrocks.sql.analyzer.Scope;
+import com.starrocks.sql.ast.QueryAttachScanPredicate;
 import com.starrocks.sql.ast.TableRelation;
 import com.starrocks.sql.optimizer.operator.OperatorType;
 import com.starrocks.sql.optimizer.operator.scalar.ColumnRefOperator;
@@ -242,14 +244,20 @@ public final class ScanAttachPredicateContext {
     }
 
     public static void beginAttachScanPredicate(
-            SlotRef[] attachCompareExprs,
-            LiteralExpr[] attachValueExprs) {
-        Preconditions.checkNotNull(attachCompareExprs);
-        Preconditions.checkNotNull(attachValueExprs);
+            QueryAttachScanPredicate queryAttachScanPredicate) {
+        Preconditions.checkNotNull(queryAttachScanPredicate);
         ScanAttachPredicateContext context = SCAN_ATTACH_PREDICATE_CONTEXT.get();
-        if (context == null) {
-            context = new ScanAttachPredicateContext(OperatorType.IN, attachCompareExprs, attachValueExprs);
+        if (RunMode.isSharedDataMode() && context == null) {
+            context = new ScanAttachPredicateContext(
+                    OperatorType.IN,
+                    queryAttachScanPredicate.getAttachCompareExprs(),
+                    queryAttachScanPredicate.getAttachValueExprs());
             SCAN_ATTACH_PREDICATE_CONTEXT.set(context);
+            LOG.info("Begin attach scan predicate, " +
+                            "attachCompareExprs: {}, " +
+                            "attachValueExprs: {}.",
+                    Arrays.toString(queryAttachScanPredicate.getAttachCompareExprs()),
+                    Arrays.toString(queryAttachScanPredicate.getAttachValueExprs()));
         }
     }
 
@@ -270,6 +278,7 @@ public final class ScanAttachPredicateContext {
         if (context != null) {
             context.destroy();
             SCAN_ATTACH_PREDICATE_CONTEXT.set(null);
+            LOG.info("End attach scan predicate.");
         }
     }
 }

@@ -463,6 +463,12 @@ public class StmtExecutor {
                 boolean isQuery = parsedStmt instanceof QueryStatement;
                 // set isQuery before `forwardToLeader` to make it right for audit log.
                 context.getState().setIsQuery(isQuery);
+
+                QueryStatement queryStatement = (QueryStatement) parsedStmt;
+                if (isQuery && queryStatement.hasQueryAttachScanPredicate()) {
+                    ScanAttachPredicateContext
+                            .beginAttachScanPredicate(queryStatement.getQueryAttachScanPredicate());
+                }
             }
 
             if (parsedStmt.isExistQueryScopeHint()) {
@@ -521,13 +527,6 @@ public class StmtExecutor {
                             }
                         }
                     } else {
-                        //mock
-                        SlotRef[] slotRefs = {new SlotRef(new TableName("tpch", "lineitem"), "l_returnflag")};
-                        LiteralExpr[] literalExprs = {new StringLiteral("A"), new StringLiteral("R")};
-                        ScanAttachPredicateContext.beginAttachScanPredicate(
-                                slotRefs,
-                                literalExprs
-                        );
                         execPlan = StatementPlanner.plan(parsedStmt, context);
                         if (parsedStmt instanceof QueryStatement && context.shouldDumpQuery()) {
                             context.getDumpInfo().setExplainInfo(execPlan.getExplainString(TExplainLevel.COSTS));

@@ -276,6 +276,7 @@ import com.starrocks.sql.ast.PrepareStmt;
 import com.starrocks.sql.ast.Property;
 import com.starrocks.sql.ast.PropertySet;
 import com.starrocks.sql.ast.QualifiedName;
+import com.starrocks.sql.ast.QueryAttachScanPredicate;
 import com.starrocks.sql.ast.QueryRelation;
 import com.starrocks.sql.ast.QueryStatement;
 import com.starrocks.sql.ast.RandomDistributionDesc;
@@ -984,9 +985,9 @@ public class AstBuilder extends StarRocksBaseVisitor<ParseNode> {
                         ((StringLiteral) visit(context.comment().string())).getStringValue(),
                 null,
                 context.orderByDesc() == null ? null :
-                    visit(context.orderByDesc().identifierList().identifier(), Identifier.class)
-                        .stream().map(Identifier::getValue).collect(toList())
-                );
+                        visit(context.orderByDesc().identifierList().identifier(), Identifier.class)
+                                .stream().map(Identifier::getValue).collect(toList())
+        );
 
         List<Identifier> columns = visitIfPresent(context.identifier(), Identifier.class);
         return new CreateTableAsSelectStmt(
@@ -3997,6 +3998,11 @@ public class AstBuilder extends StarRocksBaseVisitor<ParseNode> {
             queryStatement.setOutFileClause((OutFileClause) visit(context.outfile()));
         }
 
+        if (context.queryAttachScanPredicate() != null) {
+            queryStatement.setQueryAttachScanPredicate(
+                    (QueryAttachScanPredicate) visit(context.queryAttachScanPredicate()));
+        }
+
         if (context.explainDesc() != null) {
             queryStatement.setIsExplain(true, getExplainType(context.explainDesc()));
         }
@@ -4008,8 +4014,65 @@ public class AstBuilder extends StarRocksBaseVisitor<ParseNode> {
             }
             queryStatement.setIsTrace(getTraceMode(context.optimizerTrace()), module);
         }
-
         return queryStatement;
+    }
+
+    @Override
+    public ParseNode visitQueryAttachScanPredicate(StarRocksParser.QueryAttachScanPredicateContext context) {
+        if (context.ATTACH_SCAN_PREDICATE() != null
+                && context.qualifiedNameList() != null
+                && context.withAttachScanPredicate() != null) {
+
+            StarRocksParser.WithAttachScanPredicateContext withAttachScanPredicateContext =
+                    context.withAttachScanPredicate();
+
+            if (withAttachScanPredicateContext.identifier() == null
+                    || withAttachScanPredicateContext.WITH() == null
+                    || withAttachScanPredicateContext.expressionList() == null) {
+                return null;
+            }
+
+            String compareExprName = ((Identifier)
+                    visit(withAttachScanPredicateContext.identifier())).getValue();
+
+
+            SlotRef[] attachCompareExprs;
+            LiteralExpr[] attachValueExprs;
+
+            List<StarRocksParser.QualifiedNameContext> qualifiedNameContexts =
+                    context.qualifiedNameList().qualifiedName();
+
+            if (!CollectionUtils.isEmpty(qualifiedNameContexts) && compareExprName != null) {
+                attachCompareExprs = new SlotRef[qualifiedNameContexts.size()];
+                for (int i = 0; i < qualifiedNameContexts.size(); i++) {
+                    StarRocksParser.QualifiedNameContext qualifiedNameContext = qualifiedNameContexts.get(i);
+                    QualifiedName qualifiedName = getQualifiedName(qualifiedNameContext);
+                    attachCompareExprs[i] = new SlotRef(qualifiedNameToTableName(qualifiedName), compareExprName);
+                }
+            } else {
+                return null;
+            }
+
+            List<Expr> exprList = visit(withAttachScanPredicateContext
+                    .expressionList()
+                    .expression(), Expr.class);
+            if (!CollectionUtils.isEmpty(exprList) &&
+                    !CollectionUtils.isEmpty(exprList = exprList
+                            .stream()
+                            .filter(e -> e instanceof LiteralExpr)
+                            .collect(Collectors.toList()))) {
+                attachValueExprs = new LiteralExpr[exprList.size()];
+                for (int i = 0; i < exprList.size(); i++) {
+                    attachValueExprs[i] = (LiteralExpr) exprList.get(i);
+                }
+            } else {
+                return null;
+            }
+
+            return new QueryAttachScanPredicate(attachCompareExprs, attachValueExprs, createPos(context));
+        } else {
+            return null;
+        }
     }
 
     private Tracers.Mode getTraceMode(StarRocksParser.OptimizerTraceContext context) {
