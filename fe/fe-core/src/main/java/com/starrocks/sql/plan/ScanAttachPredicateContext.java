@@ -20,6 +20,8 @@ import com.starrocks.analysis.NullLiteral;
 import com.starrocks.analysis.SlotRef;
 import com.starrocks.analysis.TableName;
 import com.starrocks.catalog.Column;
+import com.starrocks.catalog.ScalarType;
+import com.starrocks.catalog.Type;
 import com.starrocks.server.RunMode;
 import com.starrocks.sql.analyzer.ResolvedField;
 import com.starrocks.sql.analyzer.Scope;
@@ -36,6 +38,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -50,6 +53,21 @@ public final class ScanAttachPredicateContext {
     private static final ThreadLocal<ScanAttachPredicateContext>
             SCAN_ATTACH_PREDICATE_CONTEXT = new ThreadLocal<>();
 
+    private static final Map<ScalarType, Integer> TYPE_RANKS = new TreeMap<>();
+
+    static {
+        int order = 0;
+        TYPE_RANKS.put(ScalarType.NULL, order++);
+        TYPE_RANKS.put(ScalarType.BOOLEAN, order++);
+        TYPE_RANKS.put(ScalarType.TINYINT, order++);
+        TYPE_RANKS.put(ScalarType.SMALLINT, order++);
+        TYPE_RANKS.put(ScalarType.INT, order++);
+        TYPE_RANKS.put(ScalarType.BIGINT, order++);
+        TYPE_RANKS.put(ScalarType.LARGEINT, order++);
+        TYPE_RANKS.put(ScalarType.FLOAT, order++);
+        TYPE_RANKS.put(ScalarType.DOUBLE, order++);
+    }
+
     private final OperatorType opType;
 
     public class ScanAttachPredicate {
@@ -57,6 +75,7 @@ public final class ScanAttachPredicateContext {
         String columnName;
         SlotRef attachCompareExpr;
         LiteralExpr[] attachValueExprs;
+        Type[] attachValueExprTypes;
 
         int relationFieldIndex;
         ColumnRefOperator[] fieldMappings;
@@ -103,12 +122,19 @@ public final class ScanAttachPredicateContext {
                         this.columnName,
                         ex);
             }
-            Column column = this.columnMappings[this.relationFieldIndex];
-            this.attachCompareExpr.setType(column.getType());
             this.scalarOperators = new ScalarOperator[attachValueExprs.length + 1];
             this.scalarOperators[0] = this.fieldMappings[this.relationFieldIndex];
+            Column column = this.columnMappings[this.relationFieldIndex];
             for (int i = 0; i < attachValueExprs.length; i++) {
-                this.scalarOperators[i + 1] = visitLiteral(attachValueExprs[i], column);
+                ConstantOperator constantOperator = visitLiteral(attachValueExprs[i]);
+                this.attachValueExprTypes[i] = constantOperator.getType();
+                this.scalarOperators[i + 1] = constantOperator;
+            }
+
+            Type targetType = this.compareTypes();
+            LOG.info("ScanAttachPredicate[{}]-[{}] target type: {}.", targetType);
+            if (column.getType() != targetType) {
+                this.convertScalarOperatorsType(targetType);
             }
             LOG.info("ScanAttachPredicate[{}]-[{}] resolve, scalarOperators: {}, relationFieldIndex: {}.",
                     this.tableName,
@@ -133,11 +159,49 @@ public final class ScanAttachPredicateContext {
             return this.tableName;
         }
 
-        ScalarOperator visitLiteral(LiteralExpr node, Column column) {
+        Type compareTypes() {
+            Type type = this.attachValueExprTypes[0];
+            for (int i = 1; i < this.attachValueExprTypes.length; i++) {
+                Type compareType = this.attachValueExprTypes[i];
+                int o1 = ScanAttachPredicateContext.TYPE_RANKS.get(type);
+                int o2 = ScanAttachPredicateContext.TYPE_RANKS.get(compareType);
+                if (o2 > o1) {
+                    type = compareType;
+                }
+            }
+            return type;
+        }
+
+        ConstantOperator visitLiteral(LiteralExpr node) {
             if (node instanceof NullLiteral) {
                 return ConstantOperator.createNull(node.getType());
             }
-            return ConstantOperator.createObject(node.getRealObjectValue(), column.getType());
+            return ConstantOperator.createObject(node.getRealObjectValue(), node.getType());
+        }
+
+        void convertScalarOperatorsType(Type targetType) {
+            LOG.info("ScanAttachPredicate[{}]-[{}] convert scalar operators type to target type: {}.", targetType);
+            for (int i = 1; i < scalarOperators.length; i++) {
+                ConstantOperator literal = (ConstantOperator) scalarOperators[i];
+                Type type = literal.getType();
+                if (type.isBoolean()) {
+                    scalarOperators[i] = ConstantOperator.createObject(literal.getBoolean(), targetType);
+                } else if (type.isTinyint()) {
+                    scalarOperators[i] = ConstantOperator.createObject(literal.getTinyInt(), targetType);
+                } else if (type.isSmallint()) {
+                    scalarOperators[i] = ConstantOperator.createObject(literal.getSmallint(), targetType);
+                } else if (type.isInt()) {
+                    scalarOperators[i] = ConstantOperator.createObject(literal.getInt(), targetType);
+                } else if (type.isBigint()) {
+                    scalarOperators[i] = ConstantOperator.createObject(literal.getBigint(), targetType);
+                } else if (type.isLargeint()) {
+                    scalarOperators[i] = ConstantOperator.createObject(literal.getLargeInt(), targetType);
+                } else if (type.isFloat() || type.isDouble()) {
+                    scalarOperators[i] = ConstantOperator.createObject(literal.getDouble(), targetType);
+                } else {
+                    continue;
+                }
+            }
         }
     }
 
