@@ -173,7 +173,7 @@ public final class ScanAttachPredicateContext {
                 return ConstantOperator.createNull(columnType);
             }
 
-            if (columnType == node.getType()) {
+            if (columnType.matchesType(node.getType())) {
                 LOG.info("ScanAttachPredicate[{}]-[{}] resolve 111 , columnType: {}, nodeType: {}, v: {}.",
                         this.tableName,
                         this.columnName,
