@@ -162,6 +162,12 @@ public final class ScanAttachPredicateContext {
             }
 
             if (columnType == node.getType()) {
+                LOG.info("ScanAttachPredicate[{}]-[{}] resolve 111 , columnType: {}, nodeType: {}, v: {}.",
+                        this.tableName,
+                        this.columnName,
+                        columnType,
+                        node.getType(),
+                        node.getRealObjectValue());
                 return ConstantOperator.createObject(node.getRealObjectValue(), node.getType());
             } else {
                 String errorMsg = null;
@@ -171,8 +177,15 @@ public final class ScanAttachPredicateContext {
                     int columnTypeRank = NUMERIC_TYPE_RANKS.get(columnType);
                     int nodeTypeRank = NUMERIC_TYPE_RANKS.get(node.getType());
                     if (nodeTypeRank <= columnTypeRank) {
+                        Object v;
                         scalarOperator = ConstantOperator.createObject(
-                                getNumberLiteralValue(columnType, node), columnType);
+                                v = getNumberLiteralValue(columnType, node), columnType);
+                        LOG.info("ScanAttachPredicate[{}]-[{}] resolve 222, columnType: {}, nodeType: {}, v: {}.",
+                                this.tableName,
+                                this.columnName,
+                                columnType,
+                                node.getType(),
+                                v);
                     } else {
                         errorMsg = String.format("ScanAttachPredicate input literal value(%s)," +
                                         " does not match table[%s] column[%s] type[%s].",
