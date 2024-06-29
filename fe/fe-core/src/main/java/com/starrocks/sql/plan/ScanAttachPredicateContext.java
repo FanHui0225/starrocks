@@ -185,7 +185,7 @@ public final class ScanAttachPredicateContext {
                                 this.columnName,
                                 columnType,
                                 node.getType(),
-                                v);
+                                v.getClass());
                     } else {
                         errorMsg = String.format("ScanAttachPredicate input literal value(%s)," +
                                         " does not match table[%s] column[%s] type[%s].",
@@ -211,25 +211,24 @@ public final class ScanAttachPredicateContext {
         }
 
         Object getNumberLiteralValue(Type columnType, LiteralExpr expr) {
-            Type type = expr.getType();
             Object value = expr.getRealObjectValue();
             if (columnType.isBoolean()) {
                 return value instanceof Boolean ?
                         String.valueOf(value) :
                         ((Number) value).intValue() == 1 ? true : false;
-            } else if (type.isTinyint()) {
+            } else if (columnType.isTinyint()) {
                 return Byte.valueOf(((Number) value).byteValue());
-            } else if (type.isSmallint()) {
+            } else if (columnType.isSmallint()) {
                 return Short.valueOf(((Number) value).shortValue());
-            } else if (type.isInt()) {
+            } else if (columnType.isInt()) {
                 return Integer.valueOf(((Number) value).intValue());
-            } else if (type.isBigint()) {
+            } else if (columnType.isBigint()) {
                 return Long.valueOf(((Number) value).longValue());
-            } else if (type.isLargeint()) {
+            } else if (columnType.isLargeint()) {
                 return new BigInteger(String.valueOf(value));
-            } else if (type.isFloat()) {
+            } else if (columnType.isFloat()) {
                 return Float.valueOf(((Number) value).floatValue());
-            } else if (type.isDouble()) {
+            } else if (columnType.isDouble()) {
                 return Double.valueOf(((Number) value).doubleValue());
             } else {
                 return value;
