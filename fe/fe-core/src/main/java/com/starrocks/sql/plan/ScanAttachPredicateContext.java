@@ -126,13 +126,15 @@ public final class ScanAttachPredicateContext {
             this.scalarOperators = new ScalarOperator[attachValueExprs.length + 1];
             this.scalarOperators[0] = this.fieldMappings[this.relationFieldIndex];
             Column column = this.columnMappings[this.relationFieldIndex];
+            this.attachCompareExpr.setType(column.getType());
             for (int i = 0; i < attachValueExprs.length; i++) {
                 ScalarOperator constantOperator = visitLiteral(column, attachValueExprs[i]);
                 this.scalarOperators[i + 1] = constantOperator;
             }
-            LOG.info("ScanAttachPredicate[{}]-[{}] resolve, scalarOperators: {}, relationFieldIndex: {}.",
+            LOG.info("ScanAttachPredicate[{}]-[{}] resolve, column: {}, scalarOperators: {}, relationFieldIndex: {}.",
                     this.tableName,
                     this.columnName,
+                    column,
                     scalarOperators != null ? Arrays.toString(scalarOperators) : null,
                     this.relationFieldIndex);
         }
