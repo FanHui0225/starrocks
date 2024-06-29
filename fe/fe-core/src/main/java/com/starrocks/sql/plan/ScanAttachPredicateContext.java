@@ -400,6 +400,7 @@ public final class ScanAttachPredicateContext {
                                                   PhysicalOlapScanOperator physicalOlapScanOperator) {
         ScanAttachPredicateContext context = SCAN_ATTACH_PREDICATE_CONTEXT.get();
         if (context != null) {
+            context.prepare(logicalScanOperator, physicalOlapScanOperator);
             LOG.info("Prepare attach scan predicate, {}, {}.", logicalScanOperator.hashCode(), physicalOlapScanOperator.hashCode());
         }
     }
