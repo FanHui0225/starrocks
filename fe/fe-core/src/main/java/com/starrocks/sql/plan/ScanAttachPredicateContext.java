@@ -94,6 +94,12 @@ public final class ScanAttachPredicateContext {
         void resolve(Scope scope,
                      List<ColumnRefOperator> fieldMappings,
                      Map<Column, ColumnRefOperator> columnMetaToColRefMap) {
+            LOG.info("ScanAttachPredicate[{}]-[{}] fieldMappings: {}, columnMetaToColRefMap: {}.",
+                    this.tableName,
+                    this.columnName,
+                    fieldMappings,
+                    columnMetaToColRefMap);
+
             this.fieldMappings = new ColumnRefOperator[fieldMappings.size()];
             this.columnMappings = new Column[fieldMappings.size()];
             fieldMappings.toArray(this.fieldMappings);
@@ -177,15 +183,8 @@ public final class ScanAttachPredicateContext {
                     int columnTypeRank = NUMERIC_TYPE_RANKS.get(columnType);
                     int nodeTypeRank = NUMERIC_TYPE_RANKS.get(node.getType());
                     if (nodeTypeRank <= columnTypeRank) {
-                        Object v;
                         scalarOperator = ConstantOperator.createObject(
-                                v = getNumberLiteralValue(columnType, node), columnType);
-                        LOG.info("ScanAttachPredicate[{}]-[{}] resolve 222, columnType: {}, nodeType: {}, v: {}.",
-                                this.tableName,
-                                this.columnName,
-                                columnType,
-                                node.getType(),
-                                v.getClass());
+                                getNumberLiteralValue(columnType, node), columnType);
                     } else {
                         errorMsg = String.format("ScanAttachPredicate input literal value(%s)," +
                                         " does not match table[%s] column[%s] type[%s].",
