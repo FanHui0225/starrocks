@@ -521,8 +521,6 @@ public class RelationTransformer extends AstVisitor<LogicalPlan, ExpressionMappi
                     new ExpressionMapping(node.getScope(), outputVariables), columnRefFactory);
         }
 
-        ScanAttachPredicateContext.prepareAttachScanPredicate(node, outputVariables, columnMetaToColRefMap);
-
         LogicalScanOperator scanOperator;
         if (node.getTable().isNativeTableOrMaterializedView()) {
             DistributionSpec distributionSpec = getTableDistributionSpec(node, columnMetaToColRefMap);
@@ -542,6 +540,7 @@ public class RelationTransformer extends AstVisitor<LogicalPlan, ExpressionMappi
                         .setHasTableHints(node.hasTableHints())
                         .setUsePkIndex(node.isUsePkIndex())
                         .build();
+                ScanAttachPredicateContext.initAttachScanPredicate(scanOperator, node, outputVariables);
             } else {
                 scanOperator = new LogicalBinlogScanOperator(
                         node.getTable(),

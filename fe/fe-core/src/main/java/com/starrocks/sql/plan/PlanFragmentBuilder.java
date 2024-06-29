@@ -808,11 +808,11 @@ public class PlanFragmentBuilder {
             }
 
 
-            boolean isAttachScanPredicateTable = ScanAttachPredicateContext.isAttachScanPredicateTable(referenceTable.getId());
+            boolean isAttachScanPredicateTable = ScanAttachPredicateContext.isAttachScanPredicate(node);
             ScanAttachPredicateContext.ScanAttachPredicate scanAttachPredicate = null;
             Map<ColumnRefOperator, Column> colRefToColumnMetaMap;
             if (isAttachScanPredicateTable) {
-                scanAttachPredicate = ScanAttachPredicateContext.getAttachScanPredicate(referenceTable.getId());
+                scanAttachPredicate = ScanAttachPredicateContext.getAttachScanPredicate(node);
                 colRefToColumnMetaMap = new HashMap<>(node.getColRefToColumnMetaMap());
                 ColumnRefOperator columnRefOperator = scanAttachPredicate.getAttachColumnRefOperator();
                 if (!colRefToColumnMetaMap.containsKey(columnRefOperator)) {

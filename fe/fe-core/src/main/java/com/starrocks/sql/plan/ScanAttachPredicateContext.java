@@ -22,6 +22,7 @@ import com.starrocks.analysis.TableName;
 import com.starrocks.catalog.Column;
 import com.starrocks.catalog.ScalarType;
 import com.starrocks.catalog.Type;
+import com.starrocks.common.Pair;
 import com.starrocks.server.RunMode;
 import com.starrocks.sql.analyzer.ResolvedField;
 import com.starrocks.sql.analyzer.Scope;
@@ -29,6 +30,8 @@ import com.starrocks.sql.analyzer.SemanticException;
 import com.starrocks.sql.ast.QueryAttachScanPredicate;
 import com.starrocks.sql.ast.TableRelation;
 import com.starrocks.sql.optimizer.operator.OperatorType;
+import com.starrocks.sql.optimizer.operator.logical.LogicalScanOperator;
+import com.starrocks.sql.optimizer.operator.physical.PhysicalOlapScanOperator;
 import com.starrocks.sql.optimizer.operator.scalar.ColumnRefOperator;
 import com.starrocks.sql.optimizer.operator.scalar.ConstantOperator;
 import com.starrocks.sql.optimizer.operator.scalar.InPredicateOperator;
@@ -70,8 +73,6 @@ public final class ScanAttachPredicateContext {
         NUMERIC_TYPE_RANKS.put(ScalarType.DOUBLE, order++);
     }
 
-    private final OperatorType opType;
-
     public class ScanAttachPredicate {
         String tableName;
         String columnName;
@@ -94,7 +95,9 @@ public final class ScanAttachPredicateContext {
         void resolve(Scope scope,
                      List<ColumnRefOperator> fieldMappings,
                      Map<Column, ColumnRefOperator> columnMetaToColRefMap) {
-            LOG.info("ScanAttachPredicate[{}]-[{}] fieldMappings: {}, columnMetaToColRefMap: {}.",
+            LOG.info("ScanAttachPredicate[{}]-[{}] resolve, " +
+                            "fieldMappings: {}, " +
+                            "columnMetaToColRefMap: {}.",
                     this.tableName,
                     this.columnName,
                     fieldMappings,
@@ -112,7 +115,8 @@ public final class ScanAttachPredicateContext {
                 this.columnMappings[i] = colRefToColumnMetaMap.get(this.fieldMappings[i]);
                 if (this.fieldMappings[i].getName().equals(this.columnName)) {
                     this.relationFieldIndex = i;
-                    LOG.info("ScanAttachPredicate[{}]-[{}] resolve, relationFieldIndex: {}.",
+                    LOG.info("ScanAttachPredicate[{}]-[{}] resolve, " +
+                                    "relationFieldIndex: {}.",
                             this.tableName,
                             this.columnName,
                             this.relationFieldIndex);
@@ -124,7 +128,7 @@ public final class ScanAttachPredicateContext {
                 this.relationFieldIndex = resolvedField.getRelationFieldIndex();
             } catch (Exception ex) {
                 resolvedField = null;
-                LOG.error("ScanAttachPredicate[{}]-[{}] resolve field error,",
+                LOG.warn("ScanAttachPredicate[{}]-[{}] resolve field error,",
                         this.tableName,
                         this.columnName,
                         ex);
@@ -137,7 +141,10 @@ public final class ScanAttachPredicateContext {
                 ScalarOperator constantOperator = visitLiteral(column, attachValueExprs[i]);
                 this.scalarOperators[i + 1] = constantOperator;
             }
-            LOG.info("ScanAttachPredicate[{}]-[{}] resolve, column: {}, scalarOperators: {}, relationFieldIndex: {}.",
+            LOG.info("ScanAttachPredicate[{}]-[{}] resolve, " +
+                            "column: {}, " +
+                            "scalarOperators: {}, " +
+                            "relationFieldIndex: {}.",
                     this.tableName,
                     this.columnName,
                     column,
@@ -268,10 +275,14 @@ public final class ScanAttachPredicateContext {
         }
     }
 
+    private final OperatorType opType;
     private LiteralExpr[] attachValueExprs;
     private SlotRefMatcher[] slotRefMatchers;
-    // raw db table id -> predicate
-    private Map<Long, ScanAttachPredicate> tblIdToAttachPredicateMap = new ConcurrentHashMap<>();
+
+    private Map<LogicalScanOperator, Pair<TableRelation, List<ColumnRefOperator>>>
+            logicalScanToTableRelationMap = new ConcurrentHashMap<>();
+    private Map<PhysicalOlapScanOperator, ScanAttachPredicate>
+            physicalScanToAttachPredicateMap = new ConcurrentHashMap<>();
 
     private ScanAttachPredicateContext(OperatorType opType,
                                        SlotRef[] attachCompareExprs,
@@ -289,49 +300,64 @@ public final class ScanAttachPredicateContext {
         return opType;
     }
 
-    public void prepare(long tableId,
-                        TableName tableName,
-                        Scope scope,
-                        List<ColumnRefOperator> fieldMappings,
-                        Map<Column, ColumnRefOperator> columnMetaToColRefMap) {
-        Preconditions.checkNotNull(tableName);
-        for (SlotRefMatcher matcher : slotRefMatchers) {
-            if (matcher.test(tableName)) {
-                ScanAttachPredicate predicate = new ScanAttachPredicate(
-                        tableName,
-                        matcher.attachCompareExpr,
-                        this.attachValueExprs);
-                predicate.resolve(scope, fieldMappings, columnMetaToColRefMap);
-                this.tblIdToAttachPredicateMap.put(tableId, predicate);
+
+    public void init(LogicalScanOperator logicalScanOperator,
+                     TableRelation tableRelation,
+                     List<ColumnRefOperator> fieldMappings) {
+        if (!this.logicalScanToTableRelationMap.containsKey(logicalScanOperator)) {
+            logicalScanToTableRelationMap.put(logicalScanOperator, Pair.create(tableRelation, fieldMappings));
+        }
+    }
+
+    public void prepare(LogicalScanOperator logicalScanOperator,
+                        PhysicalOlapScanOperator physicalOlapScanOperator) {
+        if (this.logicalScanToTableRelationMap.containsKey(logicalScanOperator)) {
+            Pair<TableRelation, List<ColumnRefOperator>> pair = logicalScanToTableRelationMap.get(logicalScanOperator);
+            TableName tableName = pair.first.getName();
+            Preconditions.checkNotNull(tableName);
+            Scope scope = pair.first.getScope();
+            List<ColumnRefOperator> fieldMappings = pair.second;
+            Map<Column, ColumnRefOperator> columnMetaToColRefMap = logicalScanOperator.getColumnMetaToColRefMap();
+            for (SlotRefMatcher matcher : slotRefMatchers) {
+                if (matcher.test(tableName)) {
+                    ScanAttachPredicate predicate = new ScanAttachPredicate(
+                            tableName,
+                            matcher.attachCompareExpr,
+                            this.attachValueExprs);
+                    predicate.resolve(scope, fieldMappings, columnMetaToColRefMap);
+                    this.physicalScanToAttachPredicateMap.put(physicalOlapScanOperator, predicate);
+                    return;
+                }
             }
         }
     }
 
-    public ScanAttachPredicate getAttachInPredicate(long tableId) {
-        return tblIdToAttachPredicateMap.get(tableId);
+    public ScanAttachPredicate getAttachInPredicate(PhysicalOlapScanOperator physicalOlapScanOperator) {
+        return physicalScanToAttachPredicateMap.get(physicalOlapScanOperator);
     }
 
     public void destroy() {
         this.attachValueExprs = null;
         this.slotRefMatchers = null;
-        this.tblIdToAttachPredicateMap.clear();
+        this.logicalScanToTableRelationMap.clear();
+        this.physicalScanToAttachPredicateMap.clear();
     }
 
-    public static boolean isAttachScanPredicateTable(long tableId) {
+    public static boolean isAttachScanPredicate(PhysicalOlapScanOperator physicalOlapScanOperator) {
         ScanAttachPredicateContext context = getContext();
         if (context == null) {
             return false;
         } else {
-            return context.tblIdToAttachPredicateMap.containsKey(tableId);
+            return context.physicalScanToAttachPredicateMap.containsKey(physicalOlapScanOperator);
         }
     }
 
-    public static ScanAttachPredicate getAttachScanPredicate(long tableId) {
+    public static ScanAttachPredicate getAttachScanPredicate(PhysicalOlapScanOperator physicalOlapScanOperator) {
         ScanAttachPredicateContext context = getContext();
         if (context == null) {
             return null;
         } else {
-            return context.getAttachInPredicate(tableId);
+            return context.getAttachInPredicate(physicalOlapScanOperator);
         }
     }
 
@@ -357,15 +383,21 @@ public final class ScanAttachPredicateContext {
         }
     }
 
-    public static void prepareAttachScanPredicate(TableRelation tableRelation,
-                                                  List<ColumnRefOperator> fieldMappings,
-                                                  Map<Column, ColumnRefOperator> columnMetaToColRefMap) {
+    public static void initAttachScanPredicate(LogicalScanOperator logicalScanOperator,
+                                               TableRelation tableRelation,
+                                               List<ColumnRefOperator> fieldMappings) {
         ScanAttachPredicateContext context = SCAN_ATTACH_PREDICATE_CONTEXT.get();
         if (context != null) {
-            TableName tableName = tableRelation.getName();
-            long tableId = tableRelation.getTable().getId();
-            Scope scope = tableRelation.getScope();
-            context.prepare(tableId, tableName, scope, fieldMappings, columnMetaToColRefMap);
+            context.init(logicalScanOperator, tableRelation, fieldMappings);
+            LOG.info("Init attach scan predicate, {}.", logicalScanOperator);
+        }
+    }
+
+    public static void prepareAttachScanPredicate(LogicalScanOperator logicalScanOperator,
+                                                  PhysicalOlapScanOperator physicalOlapScanOperator) {
+        ScanAttachPredicateContext context = SCAN_ATTACH_PREDICATE_CONTEXT.get();
+        if (context != null) {
+            LOG.info("prepare attach scan predicate, {}, {}.", logicalScanOperator, physicalOlapScanOperator);
         }
     }
 

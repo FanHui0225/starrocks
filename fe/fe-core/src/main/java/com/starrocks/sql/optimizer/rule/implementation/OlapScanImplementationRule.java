@@ -22,6 +22,7 @@ import com.starrocks.sql.optimizer.operator.logical.LogicalOlapScanOperator;
 import com.starrocks.sql.optimizer.operator.pattern.Pattern;
 import com.starrocks.sql.optimizer.operator.physical.PhysicalOlapScanOperator;
 import com.starrocks.sql.optimizer.rule.RuleType;
+import com.starrocks.sql.plan.ScanAttachPredicateContext;
 
 import java.util.List;
 
@@ -38,6 +39,9 @@ public class OlapScanImplementationRule extends ImplementationRule {
 
         physicalOlapScan.setSalt(scan.getSalt());
         physicalOlapScan.setColumnAccessPaths(scan.getColumnAccessPaths());
+
+        ScanAttachPredicateContext.prepareAttachScanPredicate(scan, physicalOlapScan);
+
         OptExpression result = new OptExpression(physicalOlapScan);
         return Lists.newArrayList(result);
     }
