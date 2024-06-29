@@ -242,7 +242,7 @@ public final class ScanAttachPredicateContext {
         }
     }
 
-    static class SlotRefMatcher implements Predicate<TableName> {
+    class SlotRefMatcher implements Predicate<TableName> {
 
         SlotRef attachCompareExpr;
 
@@ -275,11 +275,25 @@ public final class ScanAttachPredicateContext {
         }
     }
 
+    class LogicalScan {
+        TableRelation tableRelation;
+        LogicalScanOperator logicalScanOperator;
+        List<ColumnRefOperator> fieldMappings;
+
+        LogicalScan(TableRelation tableRelation,
+                    LogicalScanOperator logicalScanOperator,
+                    List<ColumnRefOperator> fieldMappings) {
+            this.tableRelation = tableRelation;
+            this.logicalScanOperator = logicalScanOperator;
+            this.fieldMappings = fieldMappings;
+        }
+    }
+
     private final OperatorType opType;
     private LiteralExpr[] attachValueExprs;
     private SlotRefMatcher[] slotRefMatchers;
 
-    private Map<LogicalScanOperator, Pair<TableRelation, List<ColumnRefOperator>>>
+    private Map<String, LogicalScan>
             logicalScanToTableRelationMap = new ConcurrentHashMap<>();
     private Map<PhysicalOlapScanOperator, ScanAttachPredicate>
             physicalScanToAttachPredicateMap = new ConcurrentHashMap<>();
@@ -301,23 +315,24 @@ public final class ScanAttachPredicateContext {
     }
 
 
-    public void init(LogicalScanOperator logicalScanOperator,
+    public void init(LogicalScanOperator scanOperator,
                      TableRelation tableRelation,
                      List<ColumnRefOperator> fieldMappings) {
-        if (!this.logicalScanToTableRelationMap.containsKey(logicalScanOperator)) {
-            logicalScanToTableRelationMap.put(logicalScanOperator, Pair.create(tableRelation, fieldMappings));
+        if (scanOperator.getId() != null && !this.logicalScanToTableRelationMap.containsKey(scanOperator.getId())) {
+            logicalScanToTableRelationMap.put(scanOperator.getId(), new LogicalScan(tableRelation, scanOperator, fieldMappings));
         }
     }
 
-    public void prepare(LogicalScanOperator logicalScanOperator,
+    public void prepare(LogicalScanOperator scanOperator,
                         PhysicalOlapScanOperator physicalOlapScanOperator) {
-        if (this.logicalScanToTableRelationMap.containsKey(logicalScanOperator)) {
-            Pair<TableRelation, List<ColumnRefOperator>> pair = logicalScanToTableRelationMap.get(logicalScanOperator);
-            TableName tableName = pair.first.getName();
+        if (this.logicalScanToTableRelationMap.containsKey(scanOperator.getId())) {
+            LogicalScan logicalScan = logicalScanToTableRelationMap.get(scanOperator.getId());
+            TableName tableName = logicalScan.tableRelation.getName();
             Preconditions.checkNotNull(tableName);
-            Scope scope = pair.first.getScope();
-            List<ColumnRefOperator> fieldMappings = pair.second;
-            Map<Column, ColumnRefOperator> columnMetaToColRefMap = logicalScanOperator.getColumnMetaToColRefMap();
+            Scope scope = logicalScan.tableRelation.getScope();
+            List<ColumnRefOperator> fieldMappings = logicalScan.fieldMappings;
+            Map<Column, ColumnRefOperator> columnMetaToColRefMap = logicalScan
+                    .logicalScanOperator.getColumnMetaToColRefMap();
             for (SlotRefMatcher matcher : slotRefMatchers) {
                 if (matcher.test(tableName)) {
                     ScanAttachPredicate predicate = new ScanAttachPredicate(
@@ -392,7 +407,7 @@ public final class ScanAttachPredicateContext {
         ScanAttachPredicateContext context = SCAN_ATTACH_PREDICATE_CONTEXT.get();
         if (context != null) {
             context.init(logicalScanOperator, tableRelation, fieldMappings);
-            LOG.info("Init attach scan predicate, {}.", logicalScanOperator.hashCode());
+            LOG.info("Init attach scan predicate, {}.", logicalScanOperator.getId());
         }
     }
 
@@ -402,7 +417,7 @@ public final class ScanAttachPredicateContext {
         if (context != null) {
             context.prepare(logicalScanOperator, physicalOlapScanOperator);
             LOG.info("Prepare attach scan predicate, {}, {}.",
-                    logicalScanOperator.hashCode(),
+                    logicalScanOperator.getId(),
                     physicalOlapScanOperator.hashCode());
         }
     }
