@@ -344,6 +344,7 @@ public final class ScanAttachPredicateContext {
     }
 
     public static boolean isAttachScanPredicate(PhysicalOlapScanOperator physicalOlapScanOperator) {
+        LOG.info("Is attach scan predicate, {}.", physicalOlapScanOperator.hashCode());
         ScanAttachPredicateContext context = getContext();
         if (context == null) {
             return false;
@@ -353,10 +354,12 @@ public final class ScanAttachPredicateContext {
     }
 
     public static ScanAttachPredicate getAttachScanPredicate(PhysicalOlapScanOperator physicalOlapScanOperator) {
+        LOG.info("Get attach scan predicate, {}.", physicalOlapScanOperator.hashCode());
         ScanAttachPredicateContext context = getContext();
         if (context == null) {
             return null;
         } else {
+
             return context.getAttachInPredicate(physicalOlapScanOperator);
         }
     }
@@ -389,7 +392,7 @@ public final class ScanAttachPredicateContext {
         ScanAttachPredicateContext context = SCAN_ATTACH_PREDICATE_CONTEXT.get();
         if (context != null) {
             context.init(logicalScanOperator, tableRelation, fieldMappings);
-            LOG.info("Init attach scan predicate, {}.", logicalScanOperator);
+            LOG.info("Init attach scan predicate, {}.", logicalScanOperator.hashCode());
         }
     }
 
@@ -397,7 +400,7 @@ public final class ScanAttachPredicateContext {
                                                   PhysicalOlapScanOperator physicalOlapScanOperator) {
         ScanAttachPredicateContext context = SCAN_ATTACH_PREDICATE_CONTEXT.get();
         if (context != null) {
-            LOG.info("prepare attach scan predicate, {}, {}.", logicalScanOperator, physicalOlapScanOperator);
+            LOG.info("Prepare attach scan predicate, {}, {}.", logicalScanOperator.hashCode(), physicalOlapScanOperator.hashCode());
         }
     }
 
