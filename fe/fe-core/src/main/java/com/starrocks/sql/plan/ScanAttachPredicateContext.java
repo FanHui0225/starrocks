@@ -25,6 +25,7 @@ import com.starrocks.catalog.Type;
 import com.starrocks.server.RunMode;
 import com.starrocks.sql.analyzer.ResolvedField;
 import com.starrocks.sql.analyzer.Scope;
+import com.starrocks.sql.analyzer.SemanticException;
 import com.starrocks.sql.ast.QueryAttachScanPredicate;
 import com.starrocks.sql.ast.TableRelation;
 import com.starrocks.sql.optimizer.operator.OperatorType;
@@ -35,6 +36,7 @@ import com.starrocks.sql.optimizer.operator.scalar.ScalarOperator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -53,19 +55,19 @@ public final class ScanAttachPredicateContext {
     private static final ThreadLocal<ScanAttachPredicateContext>
             SCAN_ATTACH_PREDICATE_CONTEXT = new ThreadLocal<>();
 
-    private static final Map<ScalarType, Integer> TYPE_RANKS = new TreeMap<>();
+    private static final Map<Type, Integer> NUMERIC_TYPE_RANKS = new TreeMap<>();
 
     static {
         int order = 0;
-        TYPE_RANKS.put(ScalarType.NULL, order++);
-        TYPE_RANKS.put(ScalarType.BOOLEAN, order++);
-        TYPE_RANKS.put(ScalarType.TINYINT, order++);
-        TYPE_RANKS.put(ScalarType.SMALLINT, order++);
-        TYPE_RANKS.put(ScalarType.INT, order++);
-        TYPE_RANKS.put(ScalarType.BIGINT, order++);
-        TYPE_RANKS.put(ScalarType.LARGEINT, order++);
-        TYPE_RANKS.put(ScalarType.FLOAT, order++);
-        TYPE_RANKS.put(ScalarType.DOUBLE, order++);
+        NUMERIC_TYPE_RANKS.put(ScalarType.NULL, order++);
+        NUMERIC_TYPE_RANKS.put(ScalarType.BOOLEAN, order++);
+        NUMERIC_TYPE_RANKS.put(ScalarType.TINYINT, order++);
+        NUMERIC_TYPE_RANKS.put(ScalarType.SMALLINT, order++);
+        NUMERIC_TYPE_RANKS.put(ScalarType.INT, order++);
+        NUMERIC_TYPE_RANKS.put(ScalarType.BIGINT, order++);
+        NUMERIC_TYPE_RANKS.put(ScalarType.LARGEINT, order++);
+        NUMERIC_TYPE_RANKS.put(ScalarType.FLOAT, order++);
+        NUMERIC_TYPE_RANKS.put(ScalarType.DOUBLE, order++);
     }
 
     private final OperatorType opType;
@@ -75,7 +77,6 @@ public final class ScanAttachPredicateContext {
         String columnName;
         SlotRef attachCompareExpr;
         LiteralExpr[] attachValueExprs;
-        Type[] attachValueExprTypes;
 
         int relationFieldIndex;
         ColumnRefOperator[] fieldMappings;
@@ -126,15 +127,8 @@ public final class ScanAttachPredicateContext {
             this.scalarOperators[0] = this.fieldMappings[this.relationFieldIndex];
             Column column = this.columnMappings[this.relationFieldIndex];
             for (int i = 0; i < attachValueExprs.length; i++) {
-                ConstantOperator constantOperator = visitLiteral(attachValueExprs[i]);
-                this.attachValueExprTypes[i] = constantOperator.getType();
+                ScalarOperator constantOperator = visitLiteral(column, attachValueExprs[i]);
                 this.scalarOperators[i + 1] = constantOperator;
-            }
-
-            Type targetType = this.compareTypes();
-            LOG.info("ScanAttachPredicate[{}]-[{}] target type: {}.", targetType);
-            if (column.getType() != targetType) {
-                this.convertScalarOperatorsType(targetType);
             }
             LOG.info("ScanAttachPredicate[{}]-[{}] resolve, scalarOperators: {}, relationFieldIndex: {}.",
                     this.tableName,
@@ -159,48 +153,71 @@ public final class ScanAttachPredicateContext {
             return this.tableName;
         }
 
-        Type compareTypes() {
-            Type type = this.attachValueExprTypes[0];
-            for (int i = 1; i < this.attachValueExprTypes.length; i++) {
-                Type compareType = this.attachValueExprTypes[i];
-                int o1 = ScanAttachPredicateContext.TYPE_RANKS.get(type);
-                int o2 = ScanAttachPredicateContext.TYPE_RANKS.get(compareType);
-                if (o2 > o1) {
-                    type = compareType;
-                }
-            }
-            return type;
-        }
-
-        ConstantOperator visitLiteral(LiteralExpr node) {
+        ScalarOperator visitLiteral(Column column, LiteralExpr node) {
+            Type columnType = column.getType();
             if (node instanceof NullLiteral) {
-                return ConstantOperator.createNull(node.getType());
+                return ConstantOperator.createNull(columnType);
             }
-            return ConstantOperator.createObject(node.getRealObjectValue(), node.getType());
+
+            if (columnType == node.getType()) {
+                return ConstantOperator.createObject(node.getRealObjectValue(), node.getType());
+            } else {
+                String errorMsg = null;
+                ScalarOperator scalarOperator = null;
+                if (NUMERIC_TYPE_RANKS.containsKey(columnType)
+                        && NUMERIC_TYPE_RANKS.containsKey(node.getType())) {
+                    int columnTypeRank = NUMERIC_TYPE_RANKS.get(columnType);
+                    int nodeTypeRank = NUMERIC_TYPE_RANKS.get(node.getType());
+                    if (nodeTypeRank <= columnTypeRank) {
+                        scalarOperator = ConstantOperator.createObject(
+                                getNumberLiteralValue(columnType, node), columnType);
+                    } else {
+                        errorMsg = String.format("ScanAttachPredicate input literal value(%s)," +
+                                        " does not match table[%s] column[%s] type[%s].",
+                                String.valueOf(node.getRealObjectValue()),
+                                this.tableName,
+                                column.getName(),
+                                String.valueOf(columnType));
+                    }
+                } else {
+                    errorMsg = String.format("ScanAttachPredicate input literal type[%s]," +
+                                    " does not match table[%s] column[%s] type[%s].",
+                            String.valueOf(node.getType()),
+                            this.tableName,
+                            column.getName(),
+                            String.valueOf(columnType));
+                }
+                if (errorMsg != null) {
+                    LOG.error(errorMsg);
+                    throw new SemanticException(errorMsg);
+                }
+                return scalarOperator;
+            }
         }
 
-        void convertScalarOperatorsType(Type targetType) {
-            LOG.info("ScanAttachPredicate[{}]-[{}] convert scalar operators type to target type: {}.", targetType);
-            for (int i = 1; i < scalarOperators.length; i++) {
-                ConstantOperator literal = (ConstantOperator) scalarOperators[i];
-                Type type = literal.getType();
-                if (type.isBoolean()) {
-                    scalarOperators[i] = ConstantOperator.createObject(literal.getBoolean(), targetType);
-                } else if (type.isTinyint()) {
-                    scalarOperators[i] = ConstantOperator.createObject(literal.getTinyInt(), targetType);
-                } else if (type.isSmallint()) {
-                    scalarOperators[i] = ConstantOperator.createObject(literal.getSmallint(), targetType);
-                } else if (type.isInt()) {
-                    scalarOperators[i] = ConstantOperator.createObject(literal.getInt(), targetType);
-                } else if (type.isBigint()) {
-                    scalarOperators[i] = ConstantOperator.createObject(literal.getBigint(), targetType);
-                } else if (type.isLargeint()) {
-                    scalarOperators[i] = ConstantOperator.createObject(literal.getLargeInt(), targetType);
-                } else if (type.isFloat() || type.isDouble()) {
-                    scalarOperators[i] = ConstantOperator.createObject(literal.getDouble(), targetType);
-                } else {
-                    continue;
-                }
+        Object getNumberLiteralValue(Type columnType, LiteralExpr expr) {
+            Type type = expr.getType();
+            Object value = expr.getRealObjectValue();
+            if (columnType.isBoolean()) {
+                return value instanceof Boolean ?
+                        String.valueOf(value) :
+                        ((Number) value).intValue() == 1 ? true : false;
+            } else if (type.isTinyint()) {
+                return Byte.valueOf(((Number) value).byteValue());
+            } else if (type.isSmallint()) {
+                return Short.valueOf(((Number) value).shortValue());
+            } else if (type.isInt()) {
+                return Integer.valueOf(((Number) value).intValue());
+            } else if (type.isBigint()) {
+                return Long.valueOf(((Number) value).longValue());
+            } else if (type.isLargeint()) {
+                return new BigInteger(String.valueOf(value));
+            } else if (type.isFloat()) {
+                return Float.valueOf(((Number) value).floatValue());
+            } else if (type.isDouble()) {
+                return Double.valueOf(((Number) value).doubleValue());
+            } else {
+                return value;
             }
         }
     }
