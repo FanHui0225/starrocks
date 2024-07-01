@@ -174,7 +174,9 @@ public final class ScanAttachPredicateContext {
             }
 
             if (columnType.matchesType(node.getType())) {
-                LOG.info("ScanAttachPredicate[{}]-[{}] resolve 111 , columnType: {}, nodeType: {}, v: {}.",
+                LOG.info("ScanAttachPredicate[{}]-[{}] visit literal, " +
+                                "columnType: {} matches nodeType: {}," +
+                                " realObjectValue: {}.",
                         this.tableName,
                         this.columnName,
                         columnType,
@@ -417,7 +419,7 @@ public final class ScanAttachPredicateContext {
             context.prepare(logicalScanOperator, physicalOlapScanOperator);
             LOG.info("Prepare attach scan predicate, {}, {}.",
                     logicalScanOperator.getId(),
-                    physicalOlapScanOperator.hashCode());
+                    physicalOlapScanOperator);
         }
     }
 
