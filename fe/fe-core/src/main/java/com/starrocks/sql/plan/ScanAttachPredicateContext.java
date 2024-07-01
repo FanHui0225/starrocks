@@ -180,7 +180,7 @@ public final class ScanAttachPredicateContext {
                         columnType,
                         node.getType(),
                         node.getRealObjectValue());
-                return ConstantOperator.createObject(node.getRealObjectValue(), node.getType());
+                return ConstantOperator.createObject(node.getRealObjectValue(), columnType);
             } else {
                 String errorMsg = null;
                 ScalarOperator scalarOperator = null;
