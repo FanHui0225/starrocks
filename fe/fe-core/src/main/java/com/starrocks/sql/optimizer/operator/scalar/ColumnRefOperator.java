@@ -107,7 +107,15 @@ public final class ColumnRefOperator extends ScalarOperator {
 
     @Override
     public String toString() {
-        return id + ": " + name;
+        return id + ": " + name
+                + " type: " + type
+                + " isPushdown: " + super.isPushdown
+                + " isRedundant: " + isRedundant
+                + " isCorrelated: " + isCorrelated
+                + " opType: " + opType
+                + " notEvalEstimate: " + notEvalEstimate
+                + " fromPredicateRangeDerive: " + fromPredicateRangeDerive
+                + " hints: " + getHints();
     }
 
     public static String toString(Collection<ColumnRefOperator> columns) {
