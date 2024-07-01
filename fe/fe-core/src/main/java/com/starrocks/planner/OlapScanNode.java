@@ -876,12 +876,13 @@ public class OlapScanNode extends ScanNode {
             msg.lake_scan_node.setSort_key_column_names(keyColumnNames);
             msg.lake_scan_node.setRollup_name(olapTable.getIndexNameById(selectedIndexId));
             if (!conjuncts.isEmpty()) {
-                LOG.info("OlapScanNode ->>>> table: {}, conjuncts: {}",
+                LOG.info("OlapScanNode >>>>>>>>>>>>>>>>>>>>>>>>> table: {}, conjuncts: {}, node: {}.",
                         String.valueOf(this.olapTable.getName()),
-                        String.valueOf(conjuncts));
+                        String.valueOf(conjuncts),
+                        this.toString());
                 for (int i = 0; i < conjuncts.size(); i++) {
                     Expr expr = conjuncts.get(i);
-                    LOG.info("OlapScanNode ->>>> " +
+                    LOG.info("OlapScanNode  >>>>>>>>>>>>>>>>>>>>>>>>> " +
                                     "conjunct index: {}, " +
                                     "conjunct class: {}, " +
                                     "conjunct obj: {}.",
@@ -890,7 +891,7 @@ public class OlapScanNode extends ScanNode {
                             String.valueOf(expr));
                 }
                 String explainString = getExplainString(conjuncts);
-                LOG.info("OlapScanNode ->>>> table: {}, explainString: {}",
+                LOG.info("OlapScanNode  >>>>>>>>>>>>>>>>>>>>>>>>> table: {}, explainString: {}",
                         String.valueOf(this.olapTable.getName()),
                         String.valueOf(explainString));
                 msg.lake_scan_node.setSql_predicates(explainString);

@@ -161,17 +161,6 @@ public class InPredicate extends Predicate {
 
     @Override
     public String toString() {
-
-        LOG.info("InPredicate >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> > " +
-                "children: {}.", this.children);
-        for (int i = 0; i < children.size(); i++) {
-            Expr expr = children.get(i);
-            LOG.info("InPredicate >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> > " +
-                            "children[{}]: {}, class: {}.",
-                    i,
-                    this.children.get(i),
-                    this.children.get(i).getClass());
-        }
         return toSql();
     }
 
