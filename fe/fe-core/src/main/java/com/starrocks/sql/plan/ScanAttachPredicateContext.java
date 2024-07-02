@@ -359,7 +359,8 @@ public final class ScanAttachPredicateContext {
                 }
                 Map<ColumnRefOperator, Column> colRefToColumnMetaMap;
                 ColumnRefOperator columnRefOperator = scanAttachPredicate.getAttachColumnRefOperator();
-                if (logicalOlapScanOperator.getColRefToColumnMetaMap() != null && !logicalOlapScanOperator.getColRefToColumnMetaMap().isEmpty()) {
+                if (logicalOlapScanOperator.getColRefToColumnMetaMap() != null
+                        && !logicalOlapScanOperator.getColRefToColumnMetaMap().isEmpty()) {
                     colRefToColumnMetaMap = new HashMap<>(logicalOlapScanOperator.getColRefToColumnMetaMap());
                     boolean exists = logicalOlapScanOperator
                             .getColRefToColumnMetaMap()
@@ -461,7 +462,7 @@ public final class ScanAttachPredicateContext {
                         logicalOlapScanOperator.getId());
             }
         } else {
-            return null;
+            return new PhysicalOlapScanOperator(logicalOlapScanOperator);
         }
     }
 
