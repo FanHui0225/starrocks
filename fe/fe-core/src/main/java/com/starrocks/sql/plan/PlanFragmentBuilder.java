@@ -807,23 +807,8 @@ public class PlanFragmentBuilder {
                         "Build Exec OlapScanNode fail, scan info is invalid", INTERNAL_ERROR, e);
             }
 
-
-            boolean isAttachScanPredicateTable = ScanAttachPredicateContext.isAttachScanPredicate(node);
-            ScanAttachPredicateContext.ScanAttachPredicate scanAttachPredicate = null;
-            Map<ColumnRefOperator, Column> colRefToColumnMetaMap;
-            if (isAttachScanPredicateTable) {
-                scanAttachPredicate = ScanAttachPredicateContext.getAttachScanPredicate(node);
-                colRefToColumnMetaMap = new HashMap<>(node.getColRefToColumnMetaMap());
-                ColumnRefOperator columnRefOperator = scanAttachPredicate.getAttachColumnRefOperator();
-                if (!colRefToColumnMetaMap.containsKey(columnRefOperator)) {
-                    colRefToColumnMetaMap.put(columnRefOperator, scanAttachPredicate.getAttachColumn());
-                }
-            } else {
-                colRefToColumnMetaMap = node.getColRefToColumnMetaMap();
-            }
-
             // set slot
-            for (Map.Entry<ColumnRefOperator, Column> entry : colRefToColumnMetaMap.entrySet()) {
+            for (Map.Entry<ColumnRefOperator, Column> entry : node.getColRefToColumnMetaMap().entrySet()) {
                 SlotDescriptor slotDescriptor =
                         context.getDescTbl().addSlotDescriptor(tupleDescriptor, new SlotId(entry.getKey().getId()));
                 slotDescriptor.setColumn(entry.getValue());
@@ -840,15 +825,9 @@ public class PlanFragmentBuilder {
             scanNode.setColumnAccessPaths(computeAllColumnAccessPath(node, context));
 
             // set predicate
-            List<ScalarOperator> originPredicates = Utils.extractConjuncts(node.getPredicate());
+            List<ScalarOperator> predicates = Utils.extractConjuncts(node.getPredicate());
             ScalarOperatorToExpr.FormatterContext formatterContext =
                     new ScalarOperatorToExpr.FormatterContext(context.getColRefToExpr());
-
-            List<ScalarOperator> predicates = new ArrayList<>();
-            if (scanAttachPredicate != null) {
-                predicates.add(scanAttachPredicate.getAttachPredicate());
-            }
-            predicates.addAll(originPredicates);
 
             LOG.info("PlanFragmentBuilder ->>> predicates: {}, colRefToExpr: {} ",
                     predicates,

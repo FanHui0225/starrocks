@@ -32,6 +32,7 @@ import com.starrocks.sql.optimizer.operator.OperatorType;
 import com.starrocks.sql.optimizer.operator.logical.LogicalScanOperator;
 import com.starrocks.sql.optimizer.operator.physical.PhysicalOlapScanOperator;
 import com.starrocks.sql.optimizer.operator.scalar.ColumnRefOperator;
+import com.starrocks.sql.optimizer.operator.scalar.CompoundPredicateOperator;
 import com.starrocks.sql.optimizer.operator.scalar.ConstantOperator;
 import com.starrocks.sql.optimizer.operator.scalar.InPredicateOperator;
 import com.starrocks.sql.optimizer.operator.scalar.ScalarOperator;
@@ -342,8 +343,21 @@ public final class ScanAttachPredicateContext {
                             this.attachValueExprs);
                     predicate.resolve(scope, fieldMappings, columnMetaToColRefMap);
                     this.physicalScanToAttachPredicateMap.put(physicalOlapScanOperator, predicate);
-                    return;
+                    break;
                 }
+            }
+            ScanAttachPredicate scanAttachPredicate = getAttachInPredicate(physicalOlapScanOperator);
+            if (scanAttachPredicate != null) {
+                ScalarOperator newScalarOperator;
+                if (physicalOlapScanOperator.getPredicate() != null) {
+                    newScalarOperator = new CompoundPredicateOperator(
+                            CompoundPredicateOperator.CompoundType.AND,
+                            scanAttachPredicate.getAttachPredicate(),
+                            physicalOlapScanOperator.getPredicate());
+                } else {
+                    newScalarOperator = scanAttachPredicate.getAttachPredicate();
+                }
+                physicalOlapScanOperator.setPredicate(newScalarOperator);
             }
         }
     }
