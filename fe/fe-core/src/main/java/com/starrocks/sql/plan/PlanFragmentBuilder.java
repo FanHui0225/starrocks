@@ -829,11 +829,7 @@ public class PlanFragmentBuilder {
             ScalarOperatorToExpr.FormatterContext formatterContext =
                     new ScalarOperatorToExpr.FormatterContext(context.getColRefToExpr());
 
-            LOG.info("PlanFragmentBuilder ->>> predicates: {}, colRefToExpr: {} ",
-                    predicates,
-                    context.getColRefToExpr());
             for (ScalarOperator predicate : predicates) {
-                LOG.info("PlanFragmentBuilder ->>> predicate: {} ", predicate);
                 scanNode.getConjuncts().add(ScalarOperatorToExpr.buildExecExpression(predicate, formatterContext));
             }
 

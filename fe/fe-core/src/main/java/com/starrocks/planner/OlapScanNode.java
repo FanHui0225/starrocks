@@ -880,16 +880,6 @@ public class OlapScanNode extends ScanNode {
                         String.valueOf(this.olapTable.getName()),
                         String.valueOf(conjuncts),
                         this.toString());
-                for (int i = 0; i < conjuncts.size(); i++) {
-                    Expr expr = conjuncts.get(i);
-                    LOG.info("OlapScanNode  >>>>>>>>>>>>>>>>>>>>>>>>> " +
-                                    "conjunct index: {}, " +
-                                    "conjunct class: {}, " +
-                                    "conjunct obj: {}.",
-                            i,
-                            expr != null ? expr.getClass().toString() : "null",
-                            String.valueOf(expr));
-                }
                 String explainString = getExplainString(conjuncts);
                 LOG.info("OlapScanNode  >>>>>>>>>>>>>>>>>>>>>>>>> table: {}, explainString: {}",
                         String.valueOf(this.olapTable.getName()),

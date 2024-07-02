@@ -584,7 +584,6 @@ public final class SqlToScalarOperatorTranslator {
                 throw new SemanticException("Subquery in left-side child of in-predicate is not supported");
             }
             if (!(node.getChild(1) instanceof Subquery)) {
-                LOG.info("visitInPredicate new InPredicateOperator >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
                 return new InPredicateOperator(node.isNotIn(),
                         node.getChildren().stream()
                                 .map(child -> visit(child, context))
