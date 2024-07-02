@@ -542,7 +542,10 @@ public class RelationTransformer extends AstVisitor<LogicalPlan, ExpressionMappi
                         .setUsePkIndex(node.isUsePkIndex())
                         .setId(UUIDUtil.genUUID().toString())
                         .build();
-                ScanAttachPredicateContext.initAttachScanPredicate(scanOperator, node, outputVariables);
+                ScanAttachPredicateContext.initAttachScanPredicate(
+                        (LogicalOlapScanOperator) scanOperator,
+                        node,
+                        outputVariables);
             } else {
                 scanOperator = new LogicalBinlogScanOperator(
                         node.getTable(),
