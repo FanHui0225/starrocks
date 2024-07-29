@@ -215,6 +215,8 @@ public class CompactionMgr {
             CompactionMgr compactionManager = reader.readJson(CompactionMgr.class);
             partitionStatisticsHashMap = compactionManager.partitionStatisticsHashMap;
         } catch (Exception ex) {
+            int ck = reader.readJson(int.class);
+            LOG.error("ckecksum: {} ", ck);
             LOG.error(ex);
         }
     }
