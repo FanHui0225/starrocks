@@ -126,6 +126,8 @@ public class SRMetaBlockReader {
             try {
                 ck = readInt();
                 LOG.error("ckecksum: {} ", ck);
+                ck = readInt();
+                LOG.error("ckecksum: {} ", ck);
             } catch (SRMetaBlockEOFException e) {
                 LOG.error(e);
             }
