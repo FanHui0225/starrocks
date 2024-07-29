@@ -122,6 +122,13 @@ public class SRMetaBlockReader {
         String s = Text.readStringWithChecksum(checkedInputStream);
         SRMetaBlockFooter footer = GsonUtils.GSON.fromJson(s, SRMetaBlockFooter.class);
         if (checksum != footer.getChecksum()) {
+            int ck = 0;
+            try {
+                ck = readInt();
+                LOG.error("ckecksum: {} ", ck);
+            } catch (SRMetaBlockEOFException e) {
+                LOG.error(e);
+            }
             LOG.error(String.format(
                     "Invalid meta block, checksum mismatch! expect %d actual %d",
                     footer.getChecksum(), checksum));
