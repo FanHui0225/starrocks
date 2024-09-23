@@ -211,13 +211,8 @@ public class CompactionMgr {
     }
 
     public void load(SRMetaBlockReader reader) throws IOException, SRMetaBlockException, SRMetaBlockEOFException {
-        try {
-            CompactionMgr compactionManager = reader.readJson(CompactionMgr.class);
-            partitionStatisticsHashMap = compactionManager.partitionStatisticsHashMap;
-        } catch (Exception ex) {
-            reader.setFlag();
-            LOG.error(ex);
-        }
+        CompactionMgr compactionManager = reader.readJson(CompactionMgr.class);
+        partitionStatisticsHashMap = compactionManager.partitionStatisticsHashMap;
     }
 
     public long getPartitionStatsCount() {

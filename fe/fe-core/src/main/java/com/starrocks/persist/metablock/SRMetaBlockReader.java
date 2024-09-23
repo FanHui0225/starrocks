@@ -50,7 +50,6 @@ public class SRMetaBlockReader {
     private final CheckedInputStream checkedInputStream;
     private SRMetaBlockHeader header;
     private int numJsonRead;
-    private boolean flag;
     // For backward compatibility reason
     private final String oldManagerClassName = "com.starrocks.privilege.PrivilegeManager";
 
@@ -87,10 +86,6 @@ public class SRMetaBlockReader {
         return s;
     }
 
-    public void setFlag() {
-        flag = true;
-    }
-
     public <T> T readJson(Class<T> returnClass) throws IOException, SRMetaBlockException, SRMetaBlockEOFException {
         return GsonUtils.GSON.fromJson(readJsonText(), returnClass);
     }
@@ -123,17 +118,13 @@ public class SRMetaBlockReader {
         // 2. read footer
         // 3. compare checksum
         // step 1 must before step 2 as the writer goes
-        if (!flag) {
-            long checksum = checkedInputStream.getChecksum().getValue();
-            String s = Text.readStringWithChecksum(checkedInputStream);
-            SRMetaBlockFooter footer = GsonUtils.GSON.fromJson(s, SRMetaBlockFooter.class);
-            if (checksum != footer.getChecksum()) {
-                LOG.error(String.format(
-                        "Invalid meta block, checksum mismatch! expect %d actual %d",
-                        footer.getChecksum(), checksum));
-            }
+        long checksum = checkedInputStream.getChecksum().getValue();
+        String s = Text.readStringWithChecksum(checkedInputStream);
+        SRMetaBlockFooter footer = GsonUtils.GSON.fromJson(s, SRMetaBlockFooter.class);
+        if (checksum != footer.getChecksum()) {
+            LOG.error(String.format(
+                    "Invalid meta block, checksum mismatch! expect %d actual %d",
+                    footer.getChecksum(), checksum));
         }
     }
-
-
 }
