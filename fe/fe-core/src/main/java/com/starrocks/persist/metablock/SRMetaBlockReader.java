@@ -124,7 +124,6 @@ public class SRMetaBlockReader {
         if (checksum != footer.getChecksum()) {
             throw new SRMetaBlockException(String.format(
                     "Invalid meta block, checksum mismatch! expect %d actual %d", footer.getChecksum(), checksum));
-
         }
     }
 }
