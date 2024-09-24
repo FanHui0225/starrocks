@@ -51,6 +51,7 @@ public class DamengSchemaResolver extends JDBCSchemaResolver {
     public Type convertColumnType(int dataType, String typeName, int columnSize, int digits) {
         PrimitiveType primitiveType;
         switch (dataType) {
+            case Types.BOOLEAN:
             case Types.BIT:
                 primitiveType = PrimitiveType.BOOLEAN;
                 break;
