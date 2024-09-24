@@ -36,7 +36,10 @@ public class DamengSchemaResolver extends JDBCSchemaResolver {
     public List<Column> convertToSRTable(ResultSet columnSet) throws SQLException {
         List<Column> fullSchema = Lists.newArrayList();
         while (columnSet.next()) {
-            Type type = convertColumnType(columnSet.getInt("DATA_TYPE"), columnSet.getString("TYPE_NAME"), columnSet.getInt("COLUMN_SIZE"), columnSet.getInt("DECIMAL_DIGITS"));
+            Type type = convertColumnType(columnSet.getInt("DATA_TYPE"),
+                    columnSet.getString("TYPE_NAME"),
+                    columnSet.getInt("COLUMN_SIZE"),
+                    columnSet.getInt("DECIMAL_DIGITS"));
             String columnName = columnSet.getString("COLUMN_NAME");
             columnName = "\"" + columnName + "\"";
             fullSchema.add(new Column(columnName, type, columnSet.getString("IS_NULLABLE").equals("YES")));
