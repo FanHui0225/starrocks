@@ -107,6 +107,7 @@ public class JDBCScanner {
     }
 
     private static final Set<Class<?>> GENERAL_JDBC_CLASS_SET =  new HashSet<>(Arrays.asList(
+            Byte.class,
             Boolean.class,
             Short.class,
             Integer.class,
