@@ -152,7 +152,7 @@ public class JDBCScanner {
                 // So we choose to convert the value to the target type here.
                 if (resultObject == null) {
                     dataColumn[resultNumRows] = null;
-                }else if (dataColumn instanceof Byte[]){
+                } else if (dataColumn instanceof Byte[]) {
                     dataColumn[resultNumRows] = ((Number) resultObject).byteValue();
                 } else if (dataColumn instanceof Short[]) {
                     dataColumn[resultNumRows] = ((Number) resultObject).shortValue();
