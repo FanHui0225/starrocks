@@ -16,10 +16,12 @@ package com.starrocks.connector.jdbc;
 
 import com.google.common.collect.Lists;
 import com.starrocks.catalog.Column;
+import com.starrocks.catalog.JDBCTable;
 import com.starrocks.catalog.PrimitiveType;
 import com.starrocks.catalog.ScalarType;
 import com.starrocks.catalog.Table;
 import com.starrocks.catalog.Type;
+import com.starrocks.common.DdlException;
 import com.starrocks.common.util.TimeUtils;
 
 import java.sql.Connection;
@@ -27,6 +29,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
+import java.util.Map;
 
 import static java.lang.Math.max;
 
@@ -39,6 +42,13 @@ public class DamengSchemaResolver extends JDBCSchemaResolver {
     public ResultSet getTables(Connection connection, String dbName) throws SQLException {
         return connection.getMetaData().getTables(connection.getCatalog(), dbName + "%", null,
                 new String[] {"TABLE", "VIEW"});
+    }
+
+    @Override
+    public Table getTable(long id, String name, List<Column> schema, List<Column> partitionColumns, String dbName,
+                          String catalogName, Map<String, String> properties) throws DdlException {
+        name = dbName != null ? "\"" + dbName + "\"." + name : name;
+        return new JDBCTable(id, name, schema, partitionColumns, dbName, catalogName, properties);
     }
 
     @Override
