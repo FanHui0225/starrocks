@@ -38,7 +38,7 @@ public class DamengSchemaResolver extends JDBCSchemaResolver {
     @Override
     public ResultSet getTables(Connection connection, String dbName) throws SQLException {
         return connection.getMetaData().getTables(connection.getCatalog(), dbName + "%", null,
-                new String[]{"TABLE", "VIEW"});
+                new String[] {"TABLE", "VIEW"});
     }
 
     @Override
