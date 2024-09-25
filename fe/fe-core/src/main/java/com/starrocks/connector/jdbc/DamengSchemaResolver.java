@@ -38,7 +38,7 @@ public class DamengSchemaResolver extends JDBCSchemaResolver {
     @Override
     public ResultSet getTables(Connection connection, String dbName) throws SQLException {
         return connection.getMetaData().getTables(connection.getCatalog(), dbName + "%", null,
-                new String[] {"TABLE", "VIEW"});
+                new String[]{"TABLE", "VIEW"});
     }
 
     @Override
@@ -94,6 +94,8 @@ public class DamengSchemaResolver extends JDBCSchemaResolver {
                 break;
             case Types.CHAR:
                 return ScalarType.createCharType(columnSize);
+            case Types.LONGVARCHAR:
+                return ScalarType.createVarcharType(columnSize);
             case Types.VARCHAR:
                 if (typeName.equalsIgnoreCase("varchar")) {
                     return ScalarType.createVarcharType(columnSize);
