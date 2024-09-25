@@ -38,7 +38,7 @@ public class DamengSchemaResolver extends JDBCSchemaResolver {
     @Override
     public ResultSet getTables(Connection connection, String dbName) throws SQLException {
         return connection.getMetaData().getTables(connection.getCatalog(), dbName + "%", null,
-                new String[] {"TABLE", "VIEW"});
+                new String[]{"TABLE", "VIEW"});
     }
 
     @Override
@@ -69,6 +69,9 @@ public class DamengSchemaResolver extends JDBCSchemaResolver {
             case Types.BIT:
                 primitiveType = PrimitiveType.BOOLEAN;
                 break;
+            case Types.TINYINT:
+                primitiveType = PrimitiveType.TINYINT;
+                break;
             case Types.SMALLINT:
                 primitiveType = PrimitiveType.SMALLINT;
                 break;
@@ -84,6 +87,7 @@ public class DamengSchemaResolver extends JDBCSchemaResolver {
             case Types.DOUBLE:
                 primitiveType = PrimitiveType.DOUBLE;
                 break;
+            case Types.DECIMAL:
             case Types.NUMERIC:
                 primitiveType = PrimitiveType.DECIMAL32;
                 break;
