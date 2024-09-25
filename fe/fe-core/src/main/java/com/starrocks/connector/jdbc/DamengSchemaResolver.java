@@ -81,6 +81,7 @@ public class DamengSchemaResolver extends JDBCSchemaResolver {
             case Types.BIGINT:
                 primitiveType = PrimitiveType.BIGINT;
                 break;
+            case Types.FLOAT:
             case Types.REAL:
                 primitiveType = PrimitiveType.FLOAT;
                 break;
