@@ -1949,18 +1949,10 @@ lock_type
 // ------------------------------------------- Query Statement ---------------------------------------------------------
 
 queryStatement
-    : (explainDesc | optimizerTrace) ? queryRelation outfile? queryAttachScanPredicate?;
+    : (explainDesc | optimizerTrace) ? queryRelation outfile?;
 
 queryRelation
     : withClause? queryNoWith
-    ;
-
-queryAttachScanPredicate
-    : ATTACH_SCAN_PREDICATE qualifiedNameList withAttachScanPredicate
-    ;
-
-withAttachScanPredicate
-    :  WITH identifier IN '(' expressionList ')'
     ;
 
 withClause
@@ -2647,10 +2639,6 @@ decimalType
 
 qualifiedName
     : identifier (DOT_IDENTIFIER | '.' identifier)*
-    ;
-
-qualifiedNameList
-    : '(' qualifiedName (',' qualifiedName)* ')'
     ;
 
 identifier

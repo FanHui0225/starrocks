@@ -542,12 +542,12 @@ public class OlapScanNode extends ScanNode {
                     continue;
                 }
             }
-    
+
             // TODO: Implement a more robust strategy for tablet affinity.
             if (!enableQueryTabletAffinity) {
                 Collections.shuffle(replicas);
             }
-    
+
             boolean tabletIsNull = true;
             boolean collectedStat = false;
             for (Replica replica : replicas) {
@@ -891,11 +891,7 @@ public class OlapScanNode extends ScanNode {
             msg.lake_scan_node.setSort_key_column_names(keyColumnNames);
             msg.lake_scan_node.setRollup_name(olapTable.getIndexNameById(selectedIndexId));
             if (!conjuncts.isEmpty()) {
-                String explainString = getExplainString(conjuncts);
-                LOG.info("OlapScanNode  (DEBUG) >>>>> table: {}, explainString: {}",
-                        String.valueOf(this.olapTable.getName()),
-                        String.valueOf(explainString));
-                msg.lake_scan_node.setSql_predicates(explainString);
+                msg.lake_scan_node.setSql_predicates(getExplainString(conjuncts));
             }
             if (null != sortColumn) {
                 msg.lake_scan_node.setSort_column(sortColumn);
